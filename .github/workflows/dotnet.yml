@@ -1,0 +1,35 @@
+name: MP Grabber / Test
+
+on:
+  push:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: windows-2019
+
+    steps:
+      - name: Setup Visual Studio 2019
+        uses: microsoft/setup-msbuild@v1.3
+        with:
+          vs-version: 16.11
+       
+      - name: Git Checkout
+        uses: actions/checkout@v3
+
+      - name: Build solution
+        run: |
+          msbuild TestGrabberMP1.sln -t:rebuild -property:Configuration=Release
+        shell: cmd
+        
+      - name: Run Tests
+        run: |
+          TestGrabberMP1.exe auto
+        working-directory: ${{ github.workspace }}\TestGrabberMP1\bin\Release
+        shell: cmd
+        
+      - name: Show Result
+        run: |
+          type "C:\ProgramData\Team MediaPortal\MediaPortal\log\TestGrabberMP1.log" 
+        shell: cmd
