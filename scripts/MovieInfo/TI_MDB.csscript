@@ -1255,7 +1255,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
     // MP1-4846 MPAA Description
     string MPAADesc = string.Empty;
-    string rx_mpaa_block = @"section.id=.advisory\-(?!spoiler[s\-])(?<block>[\s\S]+?)<\/section>\s+?<\/section>\s+?<\/section";
+    string rx_mpaa_block = @"section.id=.advisory\-(?!spoilers)(?<block>[\s\S]+?)<\/section>";
     string rx_mpaa_header = @"h4.class=.ipl-list-title.>(?<header>[^<]+?)<\/h4";
     string rx_mpaa_line = @"li.class=.ipl-zebra-list[^>]+?>(?<text>[\s\S]+?)<div class=";
 
