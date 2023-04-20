@@ -115,6 +115,6 @@
   </Target>
   -->
   <PropertyGroup>
-    <PostBuildEvent>xcopy "$(SolutionDir)\External\log4net.config" "$(SolutionDir)TestGrabberMP1\bin\$(ConfigurationName)\" /Y /T
+    <PostBuildEvent>xcopy "$(SolutionDir)\External\log4net.config" "$(SolutionDir)TestGrabberMP1\bin\$(ConfigurationName)\" /Y /T</PostBuildEvent>
   </PropertyGroup>  
 </Project>
