@@ -15,15 +15,18 @@ using System.Windows.Forms;
 
 internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 {
-  const string _dbVersion = "IMDB_MP117x";
+  const string strGrabber = "IMDB_MP117x";
   const string strGrabberVersion = "20230419.I";
 
   public void FindFilm(string strSearch, int iLimit, ArrayList elements)
   {
-    iLimit = 1000;
+    Log.Info("{0} Version: {1}", strGrabber, strGrabberVersion);
+    Log.Debug("{0} Search start: {1} {2}", strGrabber, strSearch, iLimit);
+    
     int year = 0; // Year from search string
     int yearIMDB = 0; // Year from IMDB movie
     int yAcc = 1; // Year accuracy check - checks in searchstring for (year number) or [year number]
+
     string regexPattern = string.Empty;
 
     // If string contains tt number use it
@@ -31,9 +34,9 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     {
       string ttNumber = Regex.Match(strSearch, @"(?<imdbID>tt\d{7,8})").Groups["imdbID"].Value;
       string imdbUrl = string.Format("https://www.imdb.com/title/{0}/", ttNumber);
-      IMDB.IMDBUrl url = new IMDB.IMDBUrl(imdbUrl, ttNumber, _dbVersion);
+      IMDB.IMDBUrl url = new IMDB.IMDBUrl(imdbUrl, ttNumber, strGrabber);
       elements.Add(url);
-      MediaPortal.GUI.Library.Log.Info("IMDB Script: direct tt link [{0}] added from search string: [{1}]", imdbUrl, strSearch);
+      Log.Info("{0} Direct IMDB ID link [{1}] added from search string: [{2}]", strGrabber, imdbUrl, strSearch);
       return;
     }
 
@@ -79,15 +82,15 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       }
     }
 
-    MediaPortal.GUI.Library.Log.Info("IMDB Script search for: {0}, year {1}", strSearch, year);
+    Log.Info("{0} Search for: {1}, Year: {2}", strGrabber, strSearch, year > 0 ? year : "-");
 
     try
     {
       string absoluteUri;
       string strUrl = string.Format("https://m.imdb.com/find/?q={0}", strSearch);
-      MediaPortal.GUI.Library.Log.Debug("Search url: {0}", strUrl);
-      string strBody = GetPage(strUrl, "utf-8", out absoluteUri);
+      Log.Debug("{0} Search url: {1}", strGrabber, strUrl);
 
+      string strBody = GetPage(strUrl, "utf-8", out absoluteUri);
       // strBody = Regex.Match(strBody, @"<section\sclass=""posters"">.*?</section>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled).Value;
 
       // Direct hit test
@@ -103,37 +106,33 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
           HTMLUtil htmlUtil = new HTMLUtil();
           htmlUtil.ConvertHTMLToAnsi(strTitle, out strTitle);
           strTitle = strTitle.Replace("\n", "");
-          IMDB.IMDBUrl url = new IMDB.IMDBUrl(absoluteUri.Replace("m.imdb", "www.imdb"), strTitle, _dbVersion);
+          IMDB.IMDBUrl url = new IMDB.IMDBUrl(absoluteUri.Replace("m.imdb", "www.imdb"), strTitle, strGrabber);
           elements.Add(url);
-          MediaPortal.GUI.Library.Log.Info("IMDB Script: direct hit for search string [{0}]", strSearch);
+          Log.Info("{0} Direct hit for search string [{1}]", strGrabber, strSearch);
         }
         return;
       }
 
-      /*
-      regexPattern = @"<a\shref=""/title/(?<ttnumber>.*?)/.*?>(?<title>.*?)</a>(?<option>.*?)</div>";
-      MatchCollection mc = Regex.Matches(strBody, regexPattern,
-                           RegexOptions.Singleline |
-                           RegexOptions.IgnoreCase |
-                           RegexOptions.Compiled);
-      */
-      regexPattern = @"<a\shref=.\/title\/(?<ttnumber>tt\d+?)\/[\s\S]+?span[^>]+?h3.>(?<title>[^<]+?)<\/span>[^<]+?<div class=.unbold.>[^<]*?\((?<year>\d{4})\)[^<]*?(?:\((?<option>[^<]+?)\)[^<]*?)?<";
+      // regexPattern = @"<a\shref=""/title/(?<ttnumber>.*?)/.*?>(?<title>.*?)</a>(?<option>.*?)</div>";
+      // regexPattern = @"<a\shref=.\/title\/(?<ttnumber>tt\d+?)\/[\s\S]+?span[^>]+?h3.>(?<title>[^<]+?)<\/span>[^<]+?<div class=.unbold.>[^<]*?\((?<year>\d{4})\)[^<]*?(?:\((?<option>[^<]+?)\)[^<]*?)?<";
+      regexPattern = @"href=.\/title\/(?<ttnumber>tt\d+?)\/[^>]+?>(?<title>[^<]+?)<\/a><ul[^>]+?><li[^>]+?><span[^>]+?>(?<year>\d{4})<\/span";
+
       MatchCollection mc = Regex.Matches(strBody, regexPattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
       if (mc.Count != 0)
       {
-        MediaPortal.GUI.Library.Log.Info("IMDB Script: Found {0} matching movies for {1}. Filtering results.", mc.Count, strSearch);
+        Log.Info("{0} Found {1} matching movies for {2}. Filtering results.", strGrabber, mc.Count, strSearch);
         foreach (Match m in mc)
         {
           string ttnumber = string.Empty;
           string title = string.Empty;
           string syear = string.Empty;
-          string option = string.Empty;
+          // string option = string.Empty;
 
           ttnumber = m.Groups["ttnumber"].Value;
           title = m.Groups["title"].Value;
-          option = m.Groups["option"].Value.Trim();
           syear = m.Groups["year"].Value;
-
+          /*
+          option = m.Groups["option"].Value.Trim();
           bool bSkipThisEntry = option.ToLowerInvariant().Contains("tv series") ||
                                 option.ToLowerInvariant().Contains("tv mini-series") ||
                                 option.ToLowerInvariant().Contains("tv special") ||
@@ -142,8 +141,10 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
                                 option.ToLowerInvariant().Contains("tv episode") ||
                                 option.ToLowerInvariant().Contains("short") ||
                                 option.ToLowerInvariant().Contains("video game");
-
           if (!bSkipThisEntry && year != 0)
+          */
+          bool bSkipThisEntry = false;
+          if (year != 0)
           {
             if (!string.IsNullOrEmpty(syear))
             {
@@ -166,32 +167,34 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
           {
             string pageLink = string.Format("https://www.imdb.com/title/{0}/", ttnumber);
             title = title.Replace("\n", "");
-            IMDB.IMDBUrl url = new IMDB.IMDBUrl(pageLink, string.Format("{0} ({2}) {1}", title, option, syear), _dbVersion);
+            IMDB.IMDBUrl url = new IMDB.IMDBUrl(pageLink, string.Format("{0} ({2}) {1}", title, option, syear), strGrabber);
             elements.Add(url);
           }
         }
-        MediaPortal.GUI.Library.Log.Info("IMDB Script: Total returned movie count {0}", elements.Count);
+        Log.Info("{0} Total returned movie count {1}", strGrabber, elements.Count);
       }
       else
       {
-        MediaPortal.GUI.Library.Log.Info("IMDB Script: Movies not found for {0}", strSearch);
+        Log.Info("{0} Movies not found for {1}", strGrabber, strSearch);
       }
     }
     catch (Exception ex)
     {
-      MediaPortal.GUI.Library.Log.Error("exception for imdb lookup of {0} err:{1} stack:{2}", strSearch, ex.Message,
-                                        ex.StackTrace);
+      Log.Error("{0} Exception for IMDB lookup of {1} err:{2} stack:{3}", strGrabber, strSearch, ex.Message, ex.StackTrace);
     }
   }
 
   //Movie details
   public bool GetDetails(IMDB.IMDBUrl url, ref IMDBMovie movieDetails)
   {
+    Log.Info("{0} Version: {1}", strGrabber, strGrabberVersion);
+
     try
     {
       movieDetails.Reset();
-      movieDetails.Database = _dbVersion;
-      MediaPortal.GUI.Library.Log.Info("IMDB Script GetDetails for: {0}", url.URL);
+      movieDetails.Database = strGrabber;
+      Log.Info("{0} Script GetDetails for: {1}", url.URL);
+
       string strAbsUrl;
       string strBody = GetPage(url.URL, "utf-8", out strAbsUrl);
 
@@ -285,7 +288,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       }
       catch (Exception ex)
       {
-        MediaPortal.GUI.Library.Log.Error("IMDB Script GetWritersDetails error: {0}", ex.Message);
+        Log.Error("{0} GetWritersDetails error: {1}", strGrabber, ex.Message);
       }
 
       // Actors
@@ -360,7 +363,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       }
       catch (Exception ex)
       {
-        MediaPortal.GUI.Library.Log.Error("IMDB Script GetGenresDetails error: {0}", ex.Message);
+        Log.Error("{0} GetGenresDetails error: {1}", strGrabber, ex.Message);
       }
 
       // Studios
@@ -384,7 +387,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       }
       catch (Exception ex)
       {
-        MediaPortal.GUI.Library.Log.Error("IMDB Script GetStudiosDetails error: {0}", ex.Message);
+        Log.Error("{0} GetStudiosDetails error: {1}", strGrabber, ex.Message);
       }
 
       // Country
@@ -407,7 +410,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       }
       catch (Exception ex)
       {
-        MediaPortal.GUI.Library.Log.Error("IMDB Script GetCountry error: {0}", ex.Message);
+        Log.Error("{0} GetCountry error: {1}", strGrabber, ex.Message);
       }
 
       // Language
@@ -431,7 +434,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       if (!string.IsNullOrEmpty(languages))
       {
         movieDetails.Language = HttpUtility.HtmlDecode(languages.Remove(languages.LastIndexOf(", ")));
-        MediaPortal.GUI.Library.Log.Debug("IMDB Languages: {0}", movieDetails.Language);
+        Log.Debug("{0} Languages: {1}", strGrabber, movieDetails.Language);
       }
 
       // MPARating
@@ -540,7 +543,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       if (!string.IsNullOrEmpty(CertDescription)) 
       {
         movieDetails.MPAAText = CertDescription.Replace("\n"," "); // MP1-4846
-        MediaPortal.GUI.Library.Log.Debug("MPAA Description: {0}", movieDetails.MPAAText);
+        Log.Debug("{0} MPAA Description: {1}", strGrabber, movieDetails.MPAAText);
       }
 
       // Runtime
@@ -588,7 +591,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       }
       catch (Exception ex)
       {
-        MediaPortal.GUI.Library.Log.Error("IMDB Script Rating error: {0}", ex.Message);
+        Log.Error("{0} GetRating error: {1}", strGrabber, ex.Message);
       }
 
       // Votes
@@ -650,7 +653,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       }
       catch (Exception ex)
       {
-        MediaPortal.GUI.Library.Log.Error("IMDB Script GetPlotDetails error: {0}", ex.Message);
+        Log.Error("{0} GetPlotDetails error: {1}", strGrabber, ex.Message);
       }
 
       if (movieDetails.RunTime == 0)
@@ -663,7 +666,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
           regexPattern = @">\s*?Runtime[^>]+?>[^<]*?<td[^>]*?>[^<]*?\((?<movieRuntime>\d+)\smin";
 
-          MediaPortal.GUI.Library.Log.Debug("IMDB RunTime error: {0}", Regex.Match(strTechHtml, regexPattern).Groups["movieRuntime"].Value);
+          Log.Debug("{0} IMDB RunTime: {1}", strGrabber, Regex.Match(strTechHtml, regexPattern).Groups["movieRuntime"].Value);
           int runTime;
           if (int.TryParse(Regex.Match(strTechHtml, regexPattern).Groups["movieRuntime"].Value, out runTime))
           {
@@ -672,7 +675,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
         }
         catch (Exception ex)
         {
-          MediaPortal.GUI.Library.Log.Error("IMDB Script GetRunTime error: {0}", ex.Message);
+          Log.Error("{0} GetRunTime error: {1}", strGrabber, ex.Message);
         }
       }
 
@@ -766,7 +769,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
                           if (!string.IsNullOrEmpty(awardLineName))
                           {
                             _awardsList = _awardsList + "- " +awardLineName + (string.IsNullOrEmpty(awardLineWho) ? "" : " - " + awardLineWho) + (string.IsNullOrEmpty(awardLineWhat) ? "" : " - " + awardLineWhat) + "\n";
-                            MediaPortal.GUI.Library.Log.Debug("Award (W): {0} - {1} {2} {3}", awardMainName, awardLineName, awardLineWho, awardLineWhat);
+                            Log.Debug("{0} Award (W): {1} - {2} {3} {4}", strGrabber, awardMainName, awardLineName, awardLineWho, awardLineWhat);
                           }
                         }
                       }
@@ -829,7 +832,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
                           if (!string.IsNullOrEmpty(awardLineName))
                           {
                             _awardsList = _awardsList + "- " + awardLineName + (string.IsNullOrEmpty(awardLineWho) ? "" : " - " + awardLineWho) + (string.IsNullOrEmpty(awardLineWhat) ? "" : " - " + awardLineWhat) + "\n";
-                            MediaPortal.GUI.Library.Log.Debug("Award (N): {0} - {1} {2} {3}", awardMainName, awardLineName,awardLineWho,awardLineWhat);
+                            Log.Debug("{0} Award (N): {1} - {2} {3} {4}", strGrabber, awardMainName, awardLineName,awardLineWho,awardLineWhat);
                           }
                         }
                       }
@@ -847,7 +850,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       }
       catch (Exception ex)
       {
-        MediaPortal.GUI.Library.Log.Error("IMDB Script GetAwards error: {0}", ex.Message);
+        Log.Error("{0} GetAwards error: {1}", strGrabber, ex.Message);
       }
 
       //User review
@@ -867,7 +870,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     }
     catch (Exception ex)
     {
-      MediaPortal.GUI.Library.Log.Error("IMDB Script GetDetails error: {0}", ex.Message);
+      Log.Error("{0} GetDetails error: {1}", strGrabber, ex.Message);
     }
     return false;
   }
@@ -884,7 +887,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   private ArrayList Parse(string input, string pattern) 
   {
-    ArrayList keyedMatches  = new ArrayList();
+    ArrayList keyedMatches = new ArrayList();
     try 
     {
       Regex regEx             = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
@@ -907,8 +910,8 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     }
     catch (Exception e) 
     {
-      MediaPortal.GUI.Library.Log.Error("Regex expression failed! Exception: {0}", e.Message);
-      MediaPortal.GUI.Library.Log.Error(e);
+      Log.Error("{0} Regex expression failed! Exception: {1}", strGrabber, e.Message);
+      Log.Error(e);
     }
     return keyedMatches;
   }
@@ -972,8 +975,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     }
     catch (Exception ex)
     {
-      MediaPortal.GUI.Library.Log.Error("Error retreiving WebPage: {0} Encoding:{1} err:{2} stack:{3}", strUrl,
-                                        strEncode, ex.Message, ex.StackTrace);
+      Log.Error("{0} Error retreiving WebPage: {1} Encoding:{2} err:{3} stack:{4}", strGrabber, strUrl, strEncode, ex.Message, ex.StackTrace);
     }
     finally
     {
@@ -983,9 +985,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
         {
           sr.Close();
         }
-        catch (Exception)
-        {
-        }
+        catch (Exception) { }
       }
       if (receiveStream != null)
       {
@@ -993,9 +993,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
         {
           receiveStream.Close();
         }
-        catch (Exception)
-        {
-        }
+        catch (Exception) { }
       }
       if (result != null)
       {
@@ -1003,9 +1001,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
         {
           result.Close();
         }
-        catch (Exception)
-        {
-        }
+        catch (Exception) { }
       }
     }
     return strBody;
