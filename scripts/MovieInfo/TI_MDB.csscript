@@ -1323,7 +1323,8 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     }
     string _languages = string.Empty;
 
-    string rx_block = @"<h4\sclass=.inline.>Language:<\/h4>.*?<\/div>";
+    // string rx_block = @"<h4\sclass=.inline.>Language:<\/h4>.*?<\/div>";
+    string rx_block = @"Language<\/span>.*?<\/div>";
     string rx_line = @"href=.[^>]+?language[^>]+?>(?<language>[^<]+)<\/a>";
     string block = Regex.Match(page, rx_block, RegexOptions.Singleline).Value;
 
