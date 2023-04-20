@@ -85,7 +85,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       }
     }
 
-    Log.Info("{0} Search for: {1}, Year: {2}", strGrabber, strSearch, year > 0 ? year : "-");
+    Log.Info("{0} Search for: {1}, Year: {2}", strGrabber, strSearch, year > 0 ? year.ToString() : "-");
 
     try
     {
