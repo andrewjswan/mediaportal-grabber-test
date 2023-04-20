@@ -170,7 +170,8 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
           {
             string pageLink = string.Format("https://www.imdb.com/title/{0}/", ttnumber);
             title = title.Replace("\n", "");
-            IMDB.IMDBUrl url = new IMDB.IMDBUrl(pageLink, string.Format("{0} ({2}) {1}", title, option, syear), strGrabber);
+            // IMDB.IMDBUrl url = new IMDB.IMDBUrl(pageLink, string.Format("{0} ({2}) {1}", title, option, syear), strGrabber);
+            IMDB.IMDBUrl url = new IMDB.IMDBUrl(pageLink, string.Format("{0} ({1})", title, syear), strGrabber);
             elements.Add(url);
           }
         }
