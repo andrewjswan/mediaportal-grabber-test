@@ -23,6 +23,11 @@ jobs:
           msbuild TestGrabberMP1.sln -t:rebuild -property:Configuration=Release
         shell: cmd
         
+      - name: Prepare environment 
+        run: |
+          xcopy Log4Net.config "C:\ProgramData\Team MediaPortal\MediaPortal\" /Y
+        working-directory: ${{ github.workspace }}\External
+        
       - name: Run Tests
         run: |
           TestGrabberMP1.exe auto
