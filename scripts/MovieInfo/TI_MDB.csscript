@@ -60,6 +60,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   public bool GetDetails(IMDB.IMDBUrl url, ref IMDBMovie movieDetails)
   {
+    Log.Info("{0} Version: {1}", strGrabber, strGrabberVersion);
     Log.Debug("{0} Start Get info by url {1}", strGrabber, HideAPIKey(url.URL));
     try
     {
