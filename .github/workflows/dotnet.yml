@@ -27,6 +27,7 @@ jobs:
         run: |
           xcopy Log4Net.config "C:\ProgramData\Team MediaPortal\MediaPortal\" /Y
         working-directory: ${{ github.workspace }}\External
+        shell: cmd
         
       - name: Run Tests
         run: |
