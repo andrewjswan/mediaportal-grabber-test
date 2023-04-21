@@ -243,7 +243,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
         Log.Debug("{0} GetDetails IMDB = {1}, JSON not found.", strGrabber, movieDetails.IMDBNumber);
         return false;
       }
-      json = json.Replace(@"""@", @"""");
+      // json = json.Replace(@"""@", @"""");
 
       try
       {
@@ -794,7 +794,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
     // MP1-4846 MPAA Description
     string MPAADesc = string.Empty;
-    string rx_mpaa_block = @"section.id=.advisory\-(?!spoiler[s\-])(?<block>[\s\S]+?)<\/section>\s+?<\/section>\s+?<\/section";
+    string rx_mpaa_block = @"section.id=.advisory\-(?!spoilers)(?<block>[\s\S]+?)<\/section>";
     string rx_mpaa_header = @"h4.class=.ipl-list-title.>(?<header>[^<]+?)<\/h4";
     string rx_mpaa_line = @"li.class=.ipl-zebra-list[^>]+?>(?<text>[\s\S]+?)<div class=";
 
@@ -931,7 +931,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       Log.Debug("{0} IMDB GetTechnical, JSON not found.", strGrabber);
       return string.Empty;
     }
-    json = json.Replace(@"""@", @"""");
+    // json = json.Replace(@"""@", @"""");
 
     try
     {
@@ -939,6 +939,9 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       if (Tech == null || Tech.pageProps == null || Tech.pageProps.contentData == null)
       {
         Log.Debug("{0} IMDB GetTechnical, JSON changed!?.", strGrabber);
+        Log.Debug("-----------------------------");
+        Log.Debug("{0}", json);
+        Log.Debug("-----------------------------");
         return string.Empty;
       }
 
