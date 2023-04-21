@@ -227,7 +227,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       if (iPos > 0)
       {
         iPos += "/title/".Length;
-        movieDetails.IMDBNumber = strAbsUrl.Substring(iPos);
+        movieDetails.IMDBNumber = absoluteUri.Substring(iPos);
         int pos = movieDetails.IMDBNumber.IndexOf("/");
 
         if (pos > 0)
