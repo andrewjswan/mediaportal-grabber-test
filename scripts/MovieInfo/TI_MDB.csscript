@@ -155,7 +155,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
         movieDetails.TagLine = adetails.TagLine;
       }
 
-      // MePo stuff
+      // MePo Stuff
       if (string.IsNullOrEmpty(movieDetails.PlotOutline))
       {
         movieDetails.PlotOutline = movieDetails.Plot;
@@ -221,11 +221,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   #region GRABBER Parameters
 
   public const bool GRABBER_ID_LOOKUP = true;                      // Try IMDB, TMDB LookUp by ID
-
   public const bool GRABBER_ADDTOUSERGROUP = true;                 // Add movies to User groups
-  public const string GRABBER_OurGroup = "Наши фильмы";            // Groups for Our films
-  public const string GRABBER_ForeignGroup = "Иностранные фильмы"; // Groups for Foreign films
-
   public const bool GRABBER_ADDTRIVIAASREVIEW = true;              // Add IMDB Trivia as UserReview, if Trivia empty -> IMDB UserReview
 
   #endregion GRABBER Parameters
@@ -277,6 +273,8 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   public const string IMDB_Trivia = IMDB_BaseUrl + "trivia/";
   public const string IMDB_Review = IMDB_BaseUrl + "reviews/?sort=totalVotes&dir=desc&ratingFilter=0";
   public const string IMDB_Ratings = IMDB_BaseUrl + "ratings/";
+  public const string IMDB_Taglines = IMDB_BaseUrl + "taglines/";
+  public const string IMDB_Tech = IMDB_BaseUrl + "technical/";
 
   #endregion IMDB Const
 
@@ -517,7 +515,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
       if (GRABBER_ADDTOUSERGROUP)
       {
-        oReturn.UserGroups = (string.IsNullOrEmpty(oReturn.Title) ? GRABBER_OurGroup : GRABBER_ForeignGroup);
+        oReturn.UserGroups = (string.IsNullOrEmpty(oReturn.Title) ? GRABBER_OurGroup() : GRABBER_ForeignGroup());
       }
       else
       {
@@ -881,8 +879,8 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       movieDetails.Votes = GetVotesIMDB(page);
     }
 
-    // IMDB RunTime / Languages / Studios / TagLine
-    if (movieDetails.RunTime == 0 || string.IsNullOrEmpty(movieDetails.Language) || string.IsNullOrEmpty(movieDetails.Studios) || string.IsNullOrEmpty(movieDetails.TagLine))
+    // IMDB RunTime / Languages / Studios
+    if (movieDetails.RunTime == 0 || string.IsNullOrEmpty(movieDetails.Language) || string.IsNullOrEmpty(movieDetails.Studios))
     {
       pageURL = string.Format(IMDB_BaseUrl, movieDetails.IMDBNumber);
       page = GetWebServerResponse(pageURL);
@@ -894,13 +892,32 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       {
         movieDetails.Studios = GetStudiosIMDB(page);
       }
+      if (movieDetails.RunTime == 0)
+      {
+        movieDetails.RunTime = GetRuntimeIMDB(page);
+      }
+    }
+
+    // IMDB TagLine
+    if (string.IsNullOrEmpty(movieDetails.TagLine))
+    {
+      pageURL = string.Format(IMDB_Taglines, movieDetails.IMDBNumber);
+      page = GetWebServerResponse(pageURL);
       if (string.IsNullOrEmpty(movieDetails.TagLine))
       {
         movieDetails.TagLine = GetTagLineIMDB(page);
       }
-      if (movieDetails.RunTime == 0)
+    }
+
+    // Get Technical data
+    pageURL = string.Format(IMDB_Tech, movieDetails.IMDBNumber);
+    page = GetWebServerResponse(pageURL);
+    string techical = GetTechnicalIMDB(page);
+    if (!string.IsNullOrEmpty(technical))
+    {
+      if (!string.IsNullOrEmpty(techical))
       {
-        movieDetails.RunTime = GetRuntimeIMDB(page);
+        movieDetails.Plot += "\n\n" + GRABBER_Technical() + ":\n" + techical;
       }
     }
   }
@@ -1395,7 +1412,8 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   private static string GetTagLineIMDB(string page)
   {
-    string rx_line = @"Taglines:<\/h4>(?<tagline>[^<]+?)<";
+    // string rx_line = @"Taglines:<\/h4>(?<tagline>[^<]+?)<";
+    string rx_line = @"Taglines<\/h1>.+?<div class=.ipc-html-content-inner-div.>(?<tagline>[^<]+?)<\/div";
     string _tagline = ParseSingleValue(page, rx_line, "tagline", true);
 
     if (!string.IsNullOrEmpty(_tagline))
@@ -1410,6 +1428,54 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   {
     string rx_pattern = @"<time itemprop=.duration[^>]*?>\n?.*?(?<runtime>\d+)\s*min\n?<\/time>";
     return ParseSingleIntValue(page, rx_pattern, "runtime");
+  }
+
+  private static string GetTechnicalIMDB(string page)
+  {
+    string regex = @"type=.application\/json.>(?<json>{.+?})<";
+    string json = Regex.Match(strBody, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
+    if (string.IsNullOrEmpty(json))
+    {
+      Log.Debug("{0} IMDB GetTechnical, JSON not found.", strGrabber);
+      return string.Empty;
+    }
+    json = json.Replace(@"""@", @"""");
+
+    try
+    {
+      JsonIMDBTech Tech = JsonConvert.DeserializeObject<JsonIMDBTech>(json);
+      if (Tech == null || Tech.pageProps == null || Tech.pageProps.contentData == null)
+      {
+        Log.Debug("{0} IMDB GetTechnical, JSON changed!?.", strGrabber);
+        return string.Empty;
+      }
+
+      string technical = string.Empty;
+      if (Tech.pageProps.contentData.section != null && Tech.pageProps.contentData.section.items != null)
+      {
+        foreach(JsonIMDBItem item in Tech.pageProps.contentData.section.items)
+        {
+          string caption = item.rowTitle;
+          string text = string.Empty;
+          foreach (JsonIMDBListContent content in item.listContent)
+          {
+            text += (!string.IsNullOrEmpty(text) ? " | " : string.Empty) + content.text + (!string.IsNullOrEmpty(content.subText) ? " " + content.subText : string.Empty);
+          }
+          technical += "- " + caption + ": " + text + "\n";
+        }
+      }
+
+      if (!string.IsNullOrEmpty(technical))
+      {
+        Log.Debug("{0} IMDB Technical specifications: {1}", strGrabber, _studios);
+      }
+      return technical;
+    }
+    catch (Exception ex)
+    {
+      Log.Debug("{0} IMDB GetTechnical, Exception {1}, JSON changed!?.", strGrabber, ex.Message);
+    }
+    return string.Empty;
   }
 
   #endregion IMDB Methods
@@ -1785,6 +1851,85 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   #endregion TMDB API Struct
 
+  #region IMDB JSON Struct
+
+  public class JsonIMDBTech
+  {
+      public JsonIMDBPageProps pageProps { get; set; }
+  }
+
+  public class JsonIMDBPageProps
+  {
+      public JsonIMDBContentData contentData { get; set; }
+  }
+
+  public class JsonIMDBContentData
+  {
+      public string parentDisplayText { get; set; }
+      public JsonIMDBEntityMetadata entityMetadata { get; set; }
+      public JsonIMDBSection section { get; set; }
+  }
+
+  public class JsonIMDBEntityMetadata
+  {
+      public string id { get; set; }
+      public JsonIMDBText titleText { get; set; }
+      public JsonIMDBText originalTitleText { get; set; }
+      public JsonIMDBReleaseYear releaseYear { get; set; }
+      public JsonIMDBPlot plot { get; set; }
+      public JsonIMDBPrimaryImage primaryImage { get; set; }
+  }
+
+  public class JsonIMDBText
+  {
+      public string text { get; set; }
+  }
+
+  public class JsonIMDBPlainText
+  {
+      public string plainText { get; set; }
+  }
+
+  public class JsonIMDBReleaseYear
+  {
+      public int year { get; set; }
+  }
+
+  public class JsonIMDBPlot
+  {
+      public JsonIMDBPlainText plotText { get; set; }
+  }
+
+  public class JsonIMDBPrimaryImage
+  {
+      public string url { get; set; }
+      public int height { get; set; }
+      public int width { get; set; }
+      public JsonIMDBPlainText caption { get; set; }
+  }
+
+  public class JsonIMDBSection
+  {
+      public List<JsonIMDBItem> items { get; set; }
+  }
+
+  public class JsonIMDBItem
+  {
+      public string id { get; set; }
+      public string rowTitle { get; set; }
+      public List<JsonIMDBListContent> listContent { get; set; }
+  }
+
+  public class JsonIMDBListContent
+  {
+      public int id { get; set; }
+      public string text { get; set; }
+      public string subText { get; set; }
+      public string href { get; set; }
+  }
+
+  #endregion IMDB JSON Struct
+
   #region Encoder
 
   public static class Encoder
@@ -1805,4 +1950,71 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   }
 
   #endregion Encoder
+
+  #region Localization
+
+  private static Dictionary<string, string> Groups = new Dictionary<string, string>() // Language - Groups for Our films|Groups for Foreign films
+  {
+    { "EN", "Our films|Foreign films" },
+	{ "RU", "Наши фильмы|Иностранные фильмы" },
+	{ "UA", "Наші фільми|Іноземні фільми"},
+	{ "DE", "Unsere Filme|Ausländische Filme" }
+  };
+
+  private static string GRABBER_OurGroup()
+  {
+	string str = Groups.Where(x => x.Key == API_LANG).Select(x => x.Value).FirstOrDefault();
+	if (string.IsNullOrEmpty(str))
+	{
+      str = Groups.Where(x => x.Key == "EN").Select(x => x.Value).FirstOrDefault();
+	}
+	if (string.IsNullOrEmpty(str))
+	{
+	  return string.Empty;
+	}
+
+    string[] group = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+    return group[0];
+  }	
+
+  private static string GRABBER_ForeignGroup()
+  {
+	string str = Groups.Where(x => x.Key == API_LANG).Select(x => x.Value).FirstOrDefault();
+	if (string.IsNullOrEmpty(str))
+	{
+      str = Groups.Where(x => x.Key == "EN").Select(x => x.Value).FirstOrDefault();
+	}
+	if (string.IsNullOrEmpty(str))
+	{
+	  return string.Empty;
+	}
+
+    string[] group = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+    return group[0];
+  }	
+
+  private static Dictionary<string, string> Technical = new Dictionary<string, string>()
+  {
+    { "EN", "Technical specifications" },
+	{ "RU", "Информация о фильме" },
+	{ "UA", "Інформація про фільм"},
+	{ "DE", "Technische Spezifikationen" }
+  };
+
+  private static string GRABBER_Technical()
+  {
+	string str = Technical.Where(x => x.Key == API_LANG).Select(x => x.Value).FirstOrDefault();
+	if (string.IsNullOrEmpty(str))
+	{
+      str = Technical.Where(x => x.Key == "EN").Select(x => x.Value).FirstOrDefault();
+	}
+	if (string.IsNullOrEmpty(str))
+	{
+	  return string.Empty;
+	}
+    return str;
+  }	
+
+  #endregion
+
 }
