@@ -2,6 +2,11 @@
 //css_reference "Databases.dll";
 //css_reference "utils.dll";
 //css_reference "Newtonsoft.Json.dll";
+//css_reference System.Core;
+//css_reference System.Data.ComponentModel;
+//css_reference System.Data.DataSetExtensions;
+//css_reference System.Xml;
+//css_reference System.Xml.Linq;
 
 using MediaPortal.GUI.Library;
 using MediaPortal.Util;
@@ -1431,7 +1436,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   private static string GetTechnicalIMDB(string page)
   {
     string regex = @"type=.application\/json.>(?<json>{.+?})<";
-    string json = Regex.Match(strBody, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
+    string json = Regex.Match(page, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
     if (string.IsNullOrEmpty(json))
     {
       Log.Debug("{0} IMDB GetTechnical, JSON not found.", strGrabber);
@@ -1465,7 +1470,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
       if (!string.IsNullOrEmpty(technical))
       {
-        Log.Debug("{0} IMDB Technical specifications: {1}", strGrabber, _studios);
+        Log.Debug("{0} IMDB Technical specifications: {1}", strGrabber, technical);
       }
       return technical;
     }

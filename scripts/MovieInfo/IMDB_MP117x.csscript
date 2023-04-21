@@ -2,6 +2,11 @@
 //css_reference "Databases.dll";
 //css_reference "utils.dll";
 //css_reference "Newtonsoft.Json.dll";
+//css_reference System.Core;
+//css_reference System.Data.ComponentModel;
+//css_reference System.Data.DataSetExtensions;
+//css_reference System.Xml;
+//css_reference System.Xml.Linq;
 
 using MediaPortal.GUI.Library;
 using MediaPortal.Util;
@@ -208,8 +213,8 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       movieDetails.Database = strGrabber;
       Log.Info("{0} Script GetDetails for: {1}", strGrabber, url.URL);
 
-      string strAbsUrl;
-      string strBody = GetPage(url.URL, "utf-8", out strAbsUrl);
+      string absoluteUri;
+      string strBody = GetPage(url.URL, "utf-8", out absoluteUri);
 
       if (string.IsNullOrEmpty(strBody))
       {
@@ -459,7 +464,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
       // IMDB MPAA Rating / MPAA Text Description MP1-4846
       string pageURL = string.Format(IMDB_Parents, movieDetails.IMDBNumber);
-      string page = GetPage(pageURL, "utf-8", out strAbsUrl);
+      string page = GetPage(pageURL, "utf-8", out absoluteUri);
       movieDetails.MPAAText = GetMPARatingText(page);
 
       // Runtime
@@ -474,14 +479,13 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
       // Tagline
       pageURL = string.Format(IMDB_Taglines, movieDetails.IMDBNumber);
-      page = GetPage(pageURL, "utf-8", out strAbsUrl);
+      page = GetPage(pageURL, "utf-8", out absoluteUri);
       movieDetails.TagLine = GetTagLineIMDB(page);
       
       // Plot long
       string strPlotUrl = string.Format(IMDB_Plot, movieDetails.IMDBNumber);
       try
       {
-        string absoluteUri;
         string strPlotHtml = GetPage(strPlotUrl, "utf-8", out absoluteUri);
 
         regexBlockPattern = @"Summaries<\/span>.+?ipc-html-content-inner-div.>(?<movieSummaries>[^<]+?)<\/div>(?:.+?ipc-html-content-inner-div.>(?<movieReview>[^<]+?)<span)?";
@@ -517,8 +521,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
         string _awardsPage = string.Empty;
         string _awardsList = string.Empty;
 
-        strAbsUrl = string.Empty;
-        _awardsPage = GetPage(_awardsURL, "utf-8", out strAbsUrl);
+        _awardsPage = GetPage(_awardsURL, "utf-8", out absoluteUri);
 
         if (!string.IsNullOrEmpty(_awardsPage)) 
         {
@@ -926,7 +929,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   private static string GetTechnicalIMDB(string page)
   {
     string regex = @"type=.application\/json.>(?<json>{.+?})<";
-    string json = Regex.Match(strBody, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
+    string json = Regex.Match(page, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
     if (string.IsNullOrEmpty(json))
     {
       Log.Debug("{0} IMDB GetTechnical, JSON not found.", strGrabber);
@@ -960,7 +963,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
       if (!string.IsNullOrEmpty(technical))
       {
-        Log.Debug("{0} IMDB Technical specifications: {1}", strGrabber, _studios);
+        Log.Debug("{0} IMDB Technical specifications: {1}", strGrabber, technical);
       }
       return technical;
     }
@@ -1000,6 +1003,19 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       Log.Error(e);
     }
     return keyedMatches;
+  }
+
+  private static string ParseSingleValue(string input, string pattern, string name, bool htmlDecode) 
+  {
+    string result = string.Empty;
+      
+    ArrayList values = Parse(input, pattern);
+    if (values.Count > 0) 
+    {
+      result = (string)((Hashtable)values[0])[name];
+    }
+    result = htmlDecode ? HttpUtility.HtmlDecode(result) : result;
+    return string.IsNullOrEmpty(result) ? string.Empty : result.Trim();
   }
 
   private static string GetPage(string strUrl, string strEncode, out string absoluteUri)
