@@ -40,3 +40,11 @@ jobs:
         run: |
           type "C:\ProgramData\Team MediaPortal\MediaPortal\log\TestGrabberMP1.log" 
         shell: cmd
+
+      - name: Upload Artifact / Build result file
+        uses: actions/upload-artifact@v3
+        with:
+          name: Test result file
+          path: |
+            "C:\ProgramData\Team MediaPortal\MediaPortal\log\TestGrabberMP1.log"
+          retention-days: 3
