@@ -936,19 +936,16 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     try
     {
       JsonIMDBTech Tech = JsonConvert.DeserializeObject<JsonIMDBTech>(json);
-      if (Tech == null || Tech.pageProps == null || Tech.pageProps.contentData == null)
+      if (Tech == null || Tech.props == null || Tech.props.pageProps == null || Tech.props.pageProps.contentData == null)
       {
         Log.Debug("{0} IMDB GetTechnical, JSON changed!?.", strGrabber);
-        Log.Debug("-----------------------------");
-        Log.Debug("{0}", json);
-        Log.Debug("-----------------------------");
         return string.Empty;
       }
 
       string technical = string.Empty;
-      if (Tech.pageProps.contentData.section != null && Tech.pageProps.contentData.section.items != null)
+      if (Tech.props.pageProps.contentData.section != null && Tech.props.pageProps.contentData.section.items != null)
       {
-        foreach(JsonIMDBItem item in Tech.pageProps.contentData.section.items)
+        foreach(JsonIMDBItem item in Tech.props.pageProps.contentData.section.items)
         {
           string caption = item.rowTitle;
           string text = string.Empty;
@@ -1149,6 +1146,11 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   }
 
   public class JsonIMDBTech
+  {
+      public JsonIMDBProps props { get; set; }
+  }
+
+  public class JsonIMDBProps
   {
       public JsonIMDBPageProps pageProps { get; set; }
   }
