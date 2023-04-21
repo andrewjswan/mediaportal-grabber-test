@@ -14,6 +14,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Web;
 
@@ -912,13 +913,10 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     // Get Technical data
     pageURL = string.Format(IMDB_Tech, movieDetails.IMDBNumber);
     page = GetWebServerResponse(pageURL);
-    string techical = GetTechnicalIMDB(page);
+    string technical = GetTechnicalIMDB(page);
     if (!string.IsNullOrEmpty(technical))
     {
-      if (!string.IsNullOrEmpty(techical))
-      {
-        movieDetails.Plot += "\n\n" + GRABBER_Technical() + ":\n" + techical;
-      }
+      movieDetails.Plot += "\n\n" + GRABBER_Technical() + ":\n" + technical;
     }
   }
 
@@ -1990,7 +1988,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 	}
 
     string[] group = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
-    return group[0];
+    return group[1];
   }	
 
   private static Dictionary<string, string> Technical = new Dictionary<string, string>()

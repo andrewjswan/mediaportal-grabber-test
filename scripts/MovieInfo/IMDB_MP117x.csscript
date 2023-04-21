@@ -12,9 +12,11 @@ using Newtonsoft.Json;
 using System;
 using System.Text;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Web;
 using System.Text.RegularExpressions;
 
@@ -686,7 +688,6 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       movieDetails.UserReview = GetUserReviewIMDB(movieDetails.IMDBNumber);
 
       string strTechUrl = string.Format(IMDB_Tech, movieDetails.IMDBNumber);
-      string absoluteUri;
       string strTechHtml = GetPage(strTechUrl, "utf-8", out absoluteUri);
       if (movieDetails.RunTime == 0)
       {
@@ -708,13 +709,10 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       }
 
       // Get Technical data
-      string techical = GetTechnicalIMDB(strTechHtml);
+      string technical = GetTechnicalIMDB(strTechHtml);
       if (!string.IsNullOrEmpty(technical))
       {
-        if (!string.IsNullOrEmpty(techical))
-        {
-          movieDetails.Plot += "\n\n" + GRABBER_Technical() + ":\n" + techical;
-        }
+        movieDetails.Plot += "\n\n" + GRABBER_Technical() + ":\n" + technical;
       }
 
       Log.Info("{0} Get info for {1} succeded.", strGrabber, movieDetails.Title);
@@ -921,6 +919,54 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     catch (Exception ex)
     {
       Log.Error("{0} IMDB Script GetUserReview error: {1}", strGrabber, ex.Message);
+    }
+    return string.Empty;
+  }
+
+  private static string GetTechnicalIMDB(string page)
+  {
+    string regex = @"type=.application\/json.>(?<json>{.+?})<";
+    string json = Regex.Match(strBody, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
+    if (string.IsNullOrEmpty(json))
+    {
+      Log.Debug("{0} IMDB GetTechnical, JSON not found.", strGrabber);
+      return string.Empty;
+    }
+    json = json.Replace(@"""@", @"""");
+
+    try
+    {
+      JsonIMDBTech Tech = JsonConvert.DeserializeObject<JsonIMDBTech>(json);
+      if (Tech == null || Tech.pageProps == null || Tech.pageProps.contentData == null)
+      {
+        Log.Debug("{0} IMDB GetTechnical, JSON changed!?.", strGrabber);
+        return string.Empty;
+      }
+
+      string technical = string.Empty;
+      if (Tech.pageProps.contentData.section != null && Tech.pageProps.contentData.section.items != null)
+      {
+        foreach(JsonIMDBItem item in Tech.pageProps.contentData.section.items)
+        {
+          string caption = item.rowTitle;
+          string text = string.Empty;
+          foreach (JsonIMDBListContent content in item.listContent)
+          {
+            text += (!string.IsNullOrEmpty(text) ? " | " : string.Empty) + content.text + (!string.IsNullOrEmpty(content.subText) ? " " + content.subText : string.Empty);
+          }
+          technical += "- " + caption + ": " + text + "\n";
+        }
+      }
+
+      if (!string.IsNullOrEmpty(technical))
+      {
+        Log.Debug("{0} IMDB Technical specifications: {1}", strGrabber, _studios);
+      }
+      return technical;
+    }
+    catch (Exception ex)
+    {
+      Log.Debug("{0} IMDB GetTechnical, Exception {1}, JSON changed!?.", strGrabber, ex.Message);
     }
     return string.Empty;
   }
