@@ -1,12 +1,8 @@
+//css_reference System.Core;
 //css_reference "core.dll";
 //css_reference "Databases.dll";
 //css_reference "utils.dll";
 //css_reference "Newtonsoft.Json.dll";
-//css_reference System.Core;
-//css_reference System.Data.ComponentModel;
-//css_reference System.Data.DataSetExtensions;
-//css_reference System.Xml;
-//css_reference System.Xml.Linq;
 
 using MediaPortal.GUI.Library;
 using MediaPortal.Util;
@@ -226,7 +222,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       string block = string.Empty;
 
       // IMDB Number
-      int iPos = strAbsUrl.IndexOf("/title/");
+      int iPos = absoluteUri.IndexOf("/title/");
 
       if (iPos > 0)
       {
