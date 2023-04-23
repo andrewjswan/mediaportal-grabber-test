@@ -3,6 +3,7 @@ using System.Collections;
 using System.ComponentModel;
 using System.IO;
 using System.Net;
+using System.Threading;
 using System.Windows.Forms;
 
 using CSScriptLibrary;
@@ -22,6 +23,7 @@ namespace TestGrabberMP1
 
     private static IIMDBScriptGrabber _grabber;
     private static AsmHelper _asmHelper;
+    private static IIMDBInternalActorsScriptGrabber InternalActorsGrabber;
 
     private readonly bool autoStart;
 
@@ -128,6 +130,31 @@ namespace TestGrabberMP1
       return true;
     }
 
+    private static bool LoadScript()
+    {
+      string scriptFileName = AppDomain.CurrentDomain.BaseDirectory + @"..\..\..\scripts\InternalActorMoviesGrabber.csscript";
+
+      // Script support script.csscript
+      if (!File.Exists(scriptFileName))
+      {
+        Log.Error("InternalActorMoviesGrabber LoadScript() - grabber script not found: {0}", scriptFileName);
+        return false;
+      }
+
+      try
+      {
+        _asmHelper = new AsmHelper(CSScript.Load(scriptFileName, null, false));
+        InternalActorsGrabber = (IIMDBInternalActorsScriptGrabber)_asmHelper.CreateObject("InternalActorsGrabber");
+      }
+      catch (Exception ex)
+      {
+        Log.Error("InternalActorMoviesGrabber LoadScript() - file: {0}, message : {1}", scriptFileName, ex.Message);
+        return false;
+      }
+
+      return true;
+    }
+
     void RunGrabber()
     {
       string[] grabbers = Utils.GetFiles(AppDomain.CurrentDomain.BaseDirectory + @"..\..\..\scripts\MovieInfo\");
@@ -150,10 +177,16 @@ namespace TestGrabberMP1
         try
         {
           //add your test titles to this ArrayList 
-          ArrayList elements = new ArrayList();
           foreach (string movieTitle in movieTitles)
           {
+            Log.Info("----------------------------------------------------------------------");
+            Log.Info("--- {0} - {1}", _grabber.GetName() , movieTitle);
+            Log.Info("----------------------------------------------------------------------");
+
+            ArrayList elements = new ArrayList();
             _grabber.FindFilm(movieTitle, 5, elements);
+            Log.Info(string.Empty);
+
             IMDBMovie movieDetails = new IMDBMovie();
             if (elements.Count > 0)
             {
@@ -162,14 +195,83 @@ namespace TestGrabberMP1
                 //only first element
                 textBox1.Text = textBox1.Text + Environment.NewLine + _grabber.GetName() + Environment.NewLine;
                 textBox1.Text = textBox1.Text + movieDetails.Title + Environment.NewLine + movieDetails.Year + Environment.NewLine + movieDetails.Genre;
-                break;
               }
             }
+            Log.Info("--- END --------------------------------------------------------------");
+            Log.Info(string.Empty);
+
+            Thread.Sleep(1000);
           }
         }
         catch
         {
         }
+      }
+
+      if (LoadScript())
+      {
+        IMDBMovie movie = new IMDBMovie
+        {
+          IMDBNumber = "tt0499549"
+        };
+
+        ArrayList actorList;
+        try
+        {
+          actorList = InternalActorsGrabber.GetIMDBMovieActorsList(movie.IMDBNumber, true);
+        }
+        catch 
+        {
+          actorList = new ArrayList { "Bruce Willis", "nm0000246" };
+        }
+
+        foreach (string actor in actorList)
+        {
+          Log.Info("----------------------------------------------------------------------");
+          Log.Info("--- {0} - {1}", movie.IMDBNumber, actor);
+          Log.Info("----------------------------------------------------------------------");
+
+          if (InternalActorsGrabber.GetActorDetails(new IMDB.IMDBUrl(actor, actor, "TEST"), out IMDBActor actorData))
+          {
+              textBox1.Text = textBox1.Text + Environment.NewLine + movie.IMDBNumber + Environment.NewLine;
+              textBox1.Text = textBox1.Text + actorData.IMDBActorID + Environment.NewLine + actorData.Name + Environment.NewLine + actorData.MiniBiography;
+          }
+          Log.Info("--- END --------------------------------------------------------------");
+          Log.Info(string.Empty);
+
+          Thread.Sleep(1000);
+        }
+
+        if (actorList.Count > 0)
+        {
+          Log.Info(string.Empty);
+          actorList = InternalActorsGrabber.FindIMDBActor(actorList[0].ToString());
+          Log.Info("----------------------------------------------------------------------");
+          foreach (string actor in actorList)
+          {
+            Log.Info("--- {0} - {1}", "Found", actor);
+          }
+          Log.Info("--- END --------------------------------------------------------------");
+          Log.Info(string.Empty);
+        }
+
+        try
+        {
+          Log.Info("----------------------------------------------------------------------");
+          Log.Info("--- {0} - {1}", "Plot", InternalActorsGrabber.GetPlotImdb(ref movie));
+          Log.Info("--- END --------------------------------------------------------------");
+          Log.Info(string.Empty);
+        }
+        catch { }
+
+        try
+        {
+          Log.Info("----------------------------------------------------------------------");
+          Log.Info("--- {0} - {1}", "Thumb", InternalActorsGrabber.GetThumbImdb(movie.IMDBNumber));
+          Log.Info("--- END --------------------------------------------------------------");
+          Log.Info(string.Empty);
+        }
+        catch { }
       }
     }
 

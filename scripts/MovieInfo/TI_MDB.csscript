@@ -23,7 +23,7 @@ using System.Web;
 internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 {
   const string strGrabber = "TI_MDB";
-  const string strGrabberVersion = "20230419.I";
+  const string strGrabberVersion = "20230422.I";
 
   public Grabber()
   {
@@ -152,7 +152,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       // Tagline
       if (API_LANG != "EN" && string.IsNullOrEmpty(movieDetails.TagLine))
       {
-        string enURL = url.URL.Replace("language=" + API_LANG_URL, "language=en");
+        string enURL = GetTMDBMovieDetailsURL(url.URL).Replace("language=" + API_LANG_URL, "language=en");
         adetails = GetTMDBDetails(enURL);
         movieDetails.TagLine = adetails.TagLine;
       }
@@ -347,7 +347,6 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     }
 
     string sRequest = MakeTMDBUrl(API_SearchMovie, string.Empty, searchStr/*, year*/);
-
     string json = GetWebServerResponse(sRequest);
     // Log.Debug("{0} GetTitles({1}) TMDB Response = {2}", strGrabber, title, json);
 
@@ -430,10 +429,6 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     try
     {
       string sRequest = GetTMDBMovieDetailsURL(url);
-      if (!url.Contains(API_KEY))
-      {
-        sRequest = GetTMDBMovieDetailsURL(url);
-      }
       json = GetWebServerResponse(sRequest);
     }
     catch
@@ -515,7 +510,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
         oReturn.Year = iYear;
       }
 
-      if (GRABBER_ADDTOUSERGROUP)
+      if (GRABBER_ADDTOUSERGROUP && GRABBER_ADDTOUSERGROUP_Lang())
       {
         oReturn.UserGroups = (string.IsNullOrEmpty(oReturn.Title) ? GRABBER_OurGroup() : GRABBER_ForeignGroup());
       }
@@ -812,7 +807,11 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   private static string GetTMDBMovieDetailsURL(string url)
   {
-    return MakeTMDBUrl(API_MovieInfo, url);
+    if (!url.Contains(API_KEY))
+    {
+      return MakeTMDBUrl(API_MovieInfo, url);
+    }
+    return url;
   }
 
   private static string MakeTMDBUrl(string url, string what, string query = "", int year = 0)
@@ -832,6 +831,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     }
     return sURL;
   }
+
   #endregion TMDB Methods
 
   #region IMDB Methods
@@ -872,31 +872,37 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     }
     movieDetails.MPAAText = GetMPARatingText(page);
 
-    // IMDB Rating / Votes 
-    if (movieDetails.Rating == 0.0f || string.IsNullOrEmpty(movieDetails.Votes))
-    {
-      pageURL = string.Format(IMDB_Ratings, movieDetails.IMDBNumber);
-      page = GetWebServerResponse(pageURL);
-      movieDetails.Rating = GetRatingIMDB(page);
-      movieDetails.Votes = GetVotesIMDB(page);
-    }
-
-    // IMDB RunTime / Languages / Studios
-    if (movieDetails.RunTime == 0 || string.IsNullOrEmpty(movieDetails.Language) || string.IsNullOrEmpty(movieDetails.Studios))
+    // IMDB RunTime / Languages / Studios / Rating / Votes
+    if (movieDetails.RunTime == 0 || 
+        string.IsNullOrEmpty(movieDetails.Language) || 
+        string.IsNullOrEmpty(movieDetails.Studios) || 
+        movieDetails.Rating == 0.0f || 
+        string.IsNullOrEmpty(movieDetails.Votes))
     {
       pageURL = string.Format(IMDB_BaseUrl, movieDetails.IMDBNumber);
       page = GetWebServerResponse(pageURL);
+
+      // IMDB Languages
       if (string.IsNullOrEmpty(movieDetails.Language))
       {
         movieDetails.Language = GetLanguagesIMDB(page);
       }
+      // IMDB Studios
       if (string.IsNullOrEmpty(movieDetails.Studios))
       {
         movieDetails.Studios = GetStudiosIMDB(page);
       }
+      // IMDB RunTime
       if (movieDetails.RunTime == 0)
       {
         movieDetails.RunTime = GetRuntimeIMDB(page);
+      }
+      // IMDB Rating / Votes 
+      if (movieDetails.Rating == 0.0f || string.IsNullOrEmpty(movieDetails.Votes))
+      {
+        movieDetails.Rating = GetRatingIMDB(page);
+        movieDetails.Votes = GetVotesIMDB(page);
+        Log.Debug("{0} IMDB Rating/Votes: {1}/{2}", strGrabber, movieDetails.Rating, movieDetails.Votes);
       }
     }
 
@@ -1015,6 +1021,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
                 }
               }
             }
+
             // Nominate
             ArrayList awardsNList = Parse(awardMainBlock, rx_awards_listNblock);
             if (awardsNList != null && awardsNList.Count > 0)
@@ -1126,6 +1133,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
       if (!string.IsNullOrEmpty(_triviaList))
       {
+        // Log.Debug("{0} Trivia: {1}", strGrabber, _triviaList.Replace("\n", " "));
         return _triviaList;
       }
     }
@@ -1194,6 +1202,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
       if (!string.IsNullOrEmpty(_reviewList))
       {
+        // Log.Debug("{0} UserReview: {1}", strGrabber, _reviewList.Replace("\n", " "));
         return _reviewList;
       }
     }
@@ -1320,15 +1329,72 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   private static float GetRatingIMDB(string page)
   {
-    string rx_rating = @"vote of.+?(?<rating>\d+?[.,]?\d*?)\s?\/";
-    return ParseSingleFloatValue(page, rx_rating, "rating");
+    string regex = @"type=.application\/ld\+json.>(?<json>{.+?})<";
+    string json = Regex.Match(page, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
+    if (string.IsNullOrEmpty(json))
+    {
+      Log.Debug("{0} GetRatingIMDB, JSON not found.", strGrabber);
+      return 0.0f;
+    }
+
+    try
+    {
+      JsonIMDBMovie Movie = JsonConvert.DeserializeObject<JsonIMDBMovie>(json);
+      if (Movie == null)
+      {
+        Log.Debug("{0} GetRatingIMDB, JSON changed!?.", strGrabber);
+        return 0.0f;
+      }
+
+      // Rating
+      if (Movie.aggregateRating != null)
+      {
+        float Rating = (float)Movie.aggregateRating.ratingValue;
+
+        if (Rating > 10.0f)
+        {
+          Rating /= 10.0f;
+        }
+        return Rating;
+      }
+    }
+    catch (Exception ex)
+    {
+      Log.Debug("{0} GetRatingIMDB, Exception {1}, JSON changed!?.", strGrabber, ex.Message);
+    }
+    return 0.0f;
   }
 
   private static string GetVotesIMDB(string page)
   {
-    string rx_votes = @"(?<votes>\d{1,}[.,]?(?:\d{1,})?)[\s\S]*?IMDb users";
-    string votes = ParseSingleIntValue(page, rx_votes, "votes").ToString();
-    return votes.Trim();
+    string regex = @"type=.application\/ld\+json.>(?<json>{.+?})<";
+    string json = Regex.Match(page, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
+    if (string.IsNullOrEmpty(json))
+    {
+      Log.Debug("{0} GetVotesIMDB, JSON not found.", strGrabber);
+      return string.Empty;
+    }
+
+    try
+    {
+      JsonIMDBMovie Movie = JsonConvert.DeserializeObject<JsonIMDBMovie>(json);
+      if (Movie == null)
+      {
+        Log.Debug("{0} GetVotesIMDB, JSON changed!?.", strGrabber);
+        return string.Empty;
+      }
+
+      // Rating
+      if (Movie.aggregateRating != null)
+      {
+        return Movie.aggregateRating.ratingCount.ToString();
+      }
+    }
+    catch (Exception ex)
+    {
+      Log.Debug("{0} GetVotesIMDB, Exception {1}, JSON changed!?.", strGrabber, ex.Message);
+    }
+    return string.Empty;
   }
 
   private static string GetLanguagesIMDB(string page)
@@ -1425,8 +1491,8 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   private static int GetRuntimeIMDB(string page)
   {
-    string rx_pattern = @"<time itemprop=.duration[^>]*?>\n?.*?(?<runtime>\d+)\s*min\n?<\/time>";
-    return ParseSingleIntValue(page, rx_pattern, "runtime");
+    string rx_pattern = @".runtime.:{.seconds.:(?<runtime>\d+),.displayableProperty.";
+    return ParseSingleIntValue(page, rx_pattern, "runtime") / 60;
   }
 
   private static string GetTechnicalIMDB(string page)
@@ -1466,7 +1532,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
       if (!string.IsNullOrEmpty(technical))
       {
-        Log.Debug("{0} IMDB Technical specifications: {1}", strGrabber, technical);
+        Log.Debug("{0} IMDB Technical specifications: {1}", strGrabber, technical.Replace("\n", " "));
       }
       return technical;
     }
@@ -1852,6 +1918,47 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   #region IMDB JSON Struct
 
+  public class JsonIMDBActor
+  {
+    [JsonProperty("@type")]
+    public string type { get; set; }
+    public string url { get; set; }
+    public string name { get; set; }
+  }
+
+  public class JsonIMDBAggregateRating
+  {
+    [JsonProperty("@type")]
+    public string type { get; set; }
+    public int ratingCount { get; set; }
+    public int bestRating { get; set; }
+    public int worstRating { get; set; }
+    public double ratingValue { get; set; }
+  }
+
+  public class JsonIMDBMovie
+  {
+    [JsonProperty("@context")]
+    public string context { get; set; }
+
+    [JsonProperty("@type")]
+    public string type { get; set; }
+    public string url { get; set; }
+    public string name { get; set; }
+    public string alternateName { get; set; }
+    public string image { get; set; }
+    public string description { get; set; }
+    public JsonIMDBAggregateRating aggregateRating { get; set; }
+    public string contentRating { get; set; }
+    public List<string> genre { get; set; }
+    public string datePublished { get; set; }
+    public string keywords { get; set; }
+    public List<JsonIMDBActor> actor { get; set; }
+    public List<JsonIMDBActor> director { get; set; }
+    public List<JsonIMDBActor> creator { get; set; }
+    public string duration { get; set; }
+  }
+
   public class JsonIMDBTech
   {
       public JsonIMDBProps props { get; set; }
@@ -1957,32 +2064,31 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   #region Localization
 
-  private static Dictionary<string, string> Groups = new Dictionary<string, string>() // Language - Groups for Our films|Groups for Foreign films
+  private static Dictionary<string, string> Groups = new Dictionary<string, string>() // Language - Add to Group|Groups for Our films|Groups for Foreign films
   {
-    { "EN", "Our films|Foreign films" },
-	{ "RU", "Наши фильмы|Иностранные фильмы" },
-	{ "UA", "Наші фільми|Іноземні фільми"},
-	{ "DE", "Unsere Filme|Ausländische Filme" }
+    { "EN", "F|Our films|Foreign films" },
+	{ "RU", "T|Наши фильмы|Иностранные фильмы" },
+	{ "UA", "T|Наші фільми|Іноземні фільми"},
+	{ "DE", "F|Unsere Filme|Ausländische Filme" }
   };
+
+  private static bool GRABBER_ADDTOUSERGROUP_Lang()
+  {
+    return GetGRABBER_GroupSetting(0) == "T";
+  }	
 
   private static string GRABBER_OurGroup()
   {
-	string str = Groups.Where(x => x.Key == API_LANG).Select(x => x.Value).FirstOrDefault();
-	if (string.IsNullOrEmpty(str))
-	{
-      str = Groups.Where(x => x.Key == "EN").Select(x => x.Value).FirstOrDefault();
-	}
-	if (string.IsNullOrEmpty(str))
-	{
-	  return string.Empty;
-	}
-
-    string[] group = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
-    return group[0];
+    return GetGRABBER_GroupSetting(1);
   }	
 
   private static string GRABBER_ForeignGroup()
   {
+    return GetGRABBER_GroupSetting(2);
+  }	
+
+  private static string GetGRABBER_GroupSetting(int i)
+  {
 	string str = Groups.Where(x => x.Key == API_LANG).Select(x => x.Value).FirstOrDefault();
 	if (string.IsNullOrEmpty(str))
 	{
@@ -1994,7 +2100,11 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 	}
 
     string[] group = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
-    return group[1];
+    if (i < group.Length)
+    {
+      return group[i];
+    }
+    return string.Empty;
   }	
 
   private static Dictionary<string, string> Technical = new Dictionary<string, string>()
