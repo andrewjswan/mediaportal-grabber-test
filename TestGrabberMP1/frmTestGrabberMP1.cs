@@ -230,6 +230,7 @@ namespace TestGrabberMP1
         }
         Log.Info("--- END --------------------------------------------------------------");
 
+        int i = 0;
         foreach (string actor in actorList)
         {
           Log.Info("----------------------------------------------------------------------");
@@ -245,6 +246,10 @@ namespace TestGrabberMP1
           Log.Info(string.Empty);
 
           Thread.Sleep(1000);
+
+          i++;
+          if (i > 2)
+            break;
         }
 
         if (actorList.Count > 0)

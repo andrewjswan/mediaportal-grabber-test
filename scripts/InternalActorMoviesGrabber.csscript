@@ -91,7 +91,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       if (Regex.Match(_strBody, pageNotFound, RegexOptions.Singleline | RegexOptions.IgnoreCase).Success)
       {
-        Log.Warn("GUIVideoArtistInfo-Actor movielist update Page not found: {0}", strUrl);
+        Log.Warn("GUIVideoArtistInfo - Actor movielist update Page not found: {0}", strUrl);
         return false;
       }
 
@@ -548,7 +548,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     }
     catch (Exception ex)
     {
-      Log.Error("FindIMDBActor exception for DB lookup of {0} err:{1} stack:{2}", strURL, ex.Message, ex.StackTrace);
+      Log.Error("FindIMDBActor exception for DB lookup of {0} err: {1} stack: {2}", strURL, ex.Message, ex.StackTrace);
     }
 
     try
@@ -664,7 +664,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     }
     catch (Exception ex)
     {
-      Log.Error("exception for imdb lookup of {0} err:{1} stack:{2}", strURL, ex.Message, ex.StackTrace);
+      Log.Error("FindIMDBActor exception for imdb lookup of {0} err: {1} stack: {2}", strURL, ex.Message, ex.StackTrace);
     }
     return elements;
   }
@@ -686,12 +686,12 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       {
         // Get IMDBID
         actor.IMDBActorID = matchimdbid.Groups["imdbid"].Value;
-        Log.Debug("InternalActorsGrabber - GetActorDetails - IMDBID: Found {0}", actor.IMDBActorID);
+        Log.Debug("InternalActorsGrabber - GetActorDetails - IMDBID Found {0}", actor.IMDBActorID);
         url.URL = string.Format("https://m.imdb.com/name/{0}/", actor.IMDBActorID);
       }
       else
       {
-        Log.Debug("InternalActorsGrabber - GetActorDetails - IMDBID: Not Found {0}", url.URL);
+        Log.Debug("InternalActorsGrabber - GetActorDetails - IMDBID Not Found {0}", url.URL);
         return false;
       }
 
@@ -699,6 +699,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       string absoluteUri;
       string html = GetPage(url.URL, "utf-8", out absoluteUri);
+      string regex;
 
       if (string.IsNullOrEmpty(html))
       {
@@ -711,9 +712,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       if (string.IsNullOrEmpty(JsonActor.ThumbnailUrl))
       {
-        string imdbImage = string.Empty;
-        string regex = @"<meta property=.og:image.\scontent=.(?<image>.+?\.jpg).\/>";
-        imdbImage = Regex.Match(html, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["image"].Value;
+        regex = @"<meta property=.og:image.\scontent=.(?<image>.+?\.jpg).\/>";
+        string imdbImage = Regex.Match(html, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["image"].Value;
         if (!string.IsNullOrEmpty(imdbImage))
         {
           imdbImage = Regex.Replace(imdbImage, @"(_[U|S]X\d+?_?.jpg)", "_UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + "_.jpg").Trim();
@@ -736,9 +736,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       }
       else
       {
-        string imdbName = string.Empty;
-        string regex = @"<span[^>]+?>(?<name>[^<].+?)<\/span";
-        imdbName = Regex.Match(html, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["name"].Value;
+        regex = @"<span[^>]+?>(?<name>[^<].+?)<\/span";
+        string imdbName = Regex.Match(html, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["name"].Value;
         if (!string.IsNullOrEmpty(imdbName))
         {
           actor.Name = imdbName;
@@ -759,7 +758,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       // Birth Date
       actor.DateOfBirth = string.Empty;
-      string regex;
 
       if (!string.IsNullOrEmpty(JsonActor.DateOfBirth))
       {
@@ -923,7 +921,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
           value = new HTMLUtil().ConvertHTMLToAnsi(value);
           value = Utils.stripHTMLtags(value).Trim();
           value = HttpUtility.HtmlDecode(value);
-          actor.MiniBiography = value;
+          actor.MiniBiography = GetMiniDescription(value);
           Log.Debug("*** IMDB Mini Bio: {0}", value.Replace("\n", " "));
         }
       }
@@ -1051,6 +1049,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         GetActorMovies(actor, false, false, true, false, false);
       }
 
+      ClearPageCache();
+
       #endregion
 
       // Add filmography
@@ -1063,7 +1063,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     }
     catch (Exception ex)
     {
-      Log.Error("CSScript GetActorDetails({0} exception:{1} {2} {3}", url.URL, ex.Message, ex.Source, ex.StackTrace);
+      Log.Error("InternalActorsGrabber - GetActorDetails - {0} exception: {1} {2} {3}", url.URL, ex.Message, ex.Source, ex.StackTrace);
     }
     return false;
   }
@@ -1083,13 +1083,13 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     if (writer) actorUrl = string.Format("https://m.imdb.com/name/{0}/filmotype/writer/", imdbActor.IMDBActorID);
     if (self) actorUrl = string.Format("https://m.imdb.com/name/{0}/filmotype/self/", imdbActor.IMDBActorID);
     */
-    actorUrl = string.Format("https://m.imdb.com/name/{0}/fullcredits/", imdbActor.IMDBActorID);
+    actorUrl = string.Format("https://m.imdb.com/name/{0}/fullcredits/", imdbActor.IMDBActorID, true);
 
     if (actor) section = "data-category=\"actor\"";
-    if (actress) actorUrl = "data-category=\"actress\"";
-    if (director) actorUrl = "data-category=\"director\"";
-    if (writer) actorUrl = "data-category=\"writer\"";
-    if (self) actorUrl = "data-category=\"self\"";
+    if (actress) section = "data-category=\"actress\"";
+    if (director) section = "data-category=\"director\"";
+    if (writer) section = "data-category=\"writer\"";
+    if (self) section = "data-category=\"self\"";
 
     actorHtml = GetPage(actorUrl, "utf-8", out uri);
     if (string.IsNullOrEmpty(actorHtml)) return;
@@ -1184,17 +1184,17 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
             if (writer || director || self)
             {
-              for (int i = 0; i < imdbActor.Count; i++)
+              for (int j = 0; j < imdbActor.Count; j++)
               {
-                if (imdbActor[i].MovieImdbID == imdbID)
+                if (imdbActor[j].MovieImdbID == imdbID)
                 {
-                  if (!string.IsNullOrEmpty(imdbActor[i].Role))
+                  if (!string.IsNullOrEmpty(imdbActor[j].Role))
                   {
-                    imdbActor[i].Role = role + ", " + imdbActor[i].Role;
+                    imdbActor[j].Role = role + ", " + imdbActor[j].Role;
                   }
                   else
                   {
-                    imdbActor[i].Role = role;
+                    imdbActor[j].Role = role;
                   }
 
                   skipAdd = true;
@@ -2109,31 +2109,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
             actor.DateOfDeath = String.Format("{0:D}", date);
           }
 
-          string miniBio = string.Empty;
-          if (!string.IsNullOrEmpty(Actor.biography))
-          {
-            using (StringReader reader = new StringReader(Actor.biography))
-            {
-              string line;
-              int i = 0;
-              while ((line = reader.ReadLine()) != null)
-              {
-                i++;
-                var punctuation = line.Where(Char.IsPunctuation).Distinct().ToArray();
-                var words = line.Split().Select(x => x.Trim(punctuation));		
-                miniBio += string.IsNullOrEmpty(miniBio) ? line : "\n" + line;
-                if (words == null || words.Count() > 3)
-                {
-                  break;
-                }
-                if (i >= 2)
-                {
-                  break;
-                }
-              }
-            }	   
-          }
-          actor.MiniBiography = miniBio;
+          actor.MiniBiography = GetMiniDescription(Actor.biography);
           actor.Biography = Actor.biography;
 
           return true;
@@ -2623,13 +2599,64 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     return keyedMatches;
   }
 
-  private string GetPage(string strUrl, string strEncode, out string absoluteUri)
+  private static string GetMiniDescription(string text)
+  {
+    string description = string.Empty;
+    if (string.IsNullOrEmpty(text))
+    {
+      return description;
+    }
+
+    text = text.Replace("\n\n","\n");
+    using (StringReader reader = new StringReader(text))
+    {
+      int i = 0;
+      string line;
+      while ((line = reader.ReadLine()) != null)
+      {
+        i++;
+        var punctuation = line.Where(Char.IsPunctuation).Distinct().ToArray();
+        var words = line.Split().Select(x => x.Trim(punctuation));		
+        description += string.IsNullOrEmpty(description) ? line : "\n" + line;
+        if (words == null || words.Count() > 3 || i >= 2)
+        {
+          break;
+        }
+      }
+    }
+
+    return description;
+  }
+
+  private static Hashtable IMDBPageCache;
+
+  private static void ClearPageCache()
+  {
+    IMDBPageCache = new Hashtable();
+  }
+
+  private string GetPage(string strUrl, string strEncode, out string absoluteUri, bool cache = false)
   {
     string strBody = string.Empty;
     absoluteUri = string.Empty;
     Stream receiveStream = null;
     StreamReader sr = null;
     WebResponse result = null;
+
+    if (cache)
+    {
+      if (IMDBPageCache == null)
+      {
+        IMDBPageCache = new Hashtable();
+      }
+
+      if (IMDBPageCache.Contains(strUrl))
+      {
+        Log.Debug("InternalActorsScriptGrabber GetPage from cache: {0}", strUrl);
+        return (string)IMDBPageCache[strUrl];
+      }
+    }
+
     try
     {
       // Make the Webrequest
@@ -2689,6 +2716,11 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         }
         catch (Exception) { }
       }
+    }
+
+    if (cache && !string.IsNullOrEmpty(strBody))
+    {
+      IMDBPageCache.Add(strUrl, strBody);
     }
     return strBody;
   }
