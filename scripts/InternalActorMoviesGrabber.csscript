@@ -1176,11 +1176,11 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
             actorMovie.Year = year;
             actorMovie.MovieImdbID = imdbID;
 
+            // Log.Debug("*** GetActorMovies: {0}: {1} - {2} ({3}) - {4}", section, imdbID, title, year, role);
+
             // Check if director/writer/self movie exists in actors movies, append role
             // to already fetched actor movie role(no duplicate movie entries)
             bool skipAdd = false;
-
-            Log.Error("*** GetActorMovies: {0}: {1} - {2} ({3}) - {4}", section, imdbID, title, year, role);
 
             if (writer || director || self)
             {
