@@ -716,7 +716,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         imdbImage = Regex.Match(html, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["image"].Value;
         if (!string.IsNullOrEmpty(imdbImage))
         {
-          imdbImage = Regex.Replace(imdbImage, "(_[U|S]X\d+?_?.jpg)", "_UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + "_.jpg").Trim();
+          imdbImage = Regex.Replace(imdbImage, @"(_[U|S]X\d+?_?.jpg)", "_UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + "_.jpg").Trim();
           actor.ThumbnailUrl = imdbImage;
         }
       }
@@ -1060,8 +1060,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     }
     catch (Exception ex)
     {
-      Log.Error("CSScript GetActorDetails({0} exception:{1} {2} {3}", url.URL, ex.Message,
-        ex.Source, ex.StackTrace);
+      Log.Error("CSScript GetActorDetails({0} exception:{1} {2} {3}", url.URL, ex.Message, ex.Source, ex.StackTrace);
     }
     return false;
   }
@@ -1178,13 +1177,15 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
             // to already fetched actor movie role(no duplicate movie entries)
             bool skipAdd = false;
 
+            Log.Error("*** GetActorMovies: {0}: {1} - {2} ({3}) - {4}", section, imdbID, title, year, role);
+
             if (writer || director || self)
             {
               for (int i = 0; i < imdbActor.Count; i++)
               {
                 if (imdbActor[i].MovieImdbID == imdbID)
                 {
-                  if (imdbActor[i].Role != string.Empty)
+                  if (!string.IsNullOrEmpty(imdbActor[i].Role))
                   {
                     imdbActor[i].Role = role + ", " + imdbActor[i].Role;
                   }
