@@ -930,7 +930,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       if (string.IsNullOrEmpty(tmdbActor.Biography) || FULL_ACTOR_INFO)
       {
         //Full Biography
-        string fullBioUrl = string.Format("https://m.imdb.com/name/{0}/bio?ref_=nm_ov_bio_sm", actor.IMDBActorID);
+        string fullBioUrl = string.Format("https://m.imdb.com/name/{0}/bio/", actor.IMDBActorID);
         html = GetPage(fullBioUrl, "utf-8", out absoluteUri);
 
         regex = @"bio[^}]+?plainText.:.(?<bio>[^}]+?).}";
@@ -1225,6 +1225,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     cleanString = Utils.stripHTMLtags(stringToClean).Trim();
     cleanString = HttpUtility.HtmlDecode(cleanString.Replace("\n", " ").Replace("\r", string.Empty).Trim());
     cleanString = cleanString.Replace("&nbsp;", " ").Trim();
+    cleanString = cleanString.Replace("  /", string.Empty).Trim();
 
     if (cleanString != null && cleanString.EndsWith("/"))
     {
@@ -2652,7 +2653,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       if (IMDBPageCache.Contains(strUrl))
       {
-        Log.Debug("InternalActorsScriptGrabber GetPage from cache: {0}", strUrl);
+        Log.Debug("InternalActorsScriptGrabber - GetPage from cache: {0}", strUrl);
         return (string)IMDBPageCache[strUrl];
       }
     }
@@ -2688,7 +2689,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     }
     catch (Exception ex)
     {
-      Log.Error("InternalActorsScriptGrabber GetPage: Error retrieving WebPage: {0} err:{1}", strUrl, ex.Message);
+      Log.Error("InternalActorsScriptGrabber - GetPage: Error retrieving WebPage: {0} err:{1}", strUrl, ex.Message);
     }
     finally
     {
