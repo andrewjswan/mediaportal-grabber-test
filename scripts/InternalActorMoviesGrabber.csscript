@@ -682,15 +682,18 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       #region Actor IMDB ID
 
       // IMDBActorID
-      try
+      Regex rximdbid = new Regex(@"(?<imdbid>nm\d{7,8})");
+      Match matchimdbid = rximdbid.Match(url.URL);
+      if (matchimdbid.Success)
       {
-        int pos = url.URL.LastIndexOf("nm");
-        string id = url.URL.Substring(pos, 9).Replace("/", string.Empty);
-        actor.IMDBActorID = id;
-        url.URL = string.Format("https://m.imdb.com/name/{0}/", id);
+        // Get IMDBID
+        actor.IMDBActorID = matchimdbid.Groups["imdbid"].Value;
+        Log.Debug("InternalActorsGrabber - GetActorDetails - IMDBID: Found {0}", actor.IMDBActorID);
+        url.URL = string.Format("https://m.imdb.com/name/{0}/", actor.IMDBActorID);
       }
-      catch (Exception)
+      else
       {
+        Log.Debug("InternalActorsGrabber - GetActorDetails - IMDBID: Not Found {0}", url.URL);
         return false;
       }
 
