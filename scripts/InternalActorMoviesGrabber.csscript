@@ -759,6 +759,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       // Birth Date
       actor.DateOfBirth = string.Empty;
+      string regex;
 
       if (!string.IsNullOrEmpty(JsonActor.DateOfBirth))
       {
@@ -806,6 +807,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       #region Actor Death date/place
 
       // Death Date
+      actor.DateOfDeath = string.Empty;
+
       if (!string.IsNullOrEmpty(JsonActor.DateOfDeath))
       {
         DateTime date = DateTime.Parse(JsonActor.DateOfDeath);
