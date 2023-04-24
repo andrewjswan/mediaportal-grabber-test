@@ -26,7 +26,7 @@ using System.Windows.Forms;
 internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 {
   const string strGrabber = "IMDB_MP117x";
-  const string strGrabberVersion = "20230422.I";
+  const string strGrabberVersion = "20230424.I";
 
   public const string TITLE_MASK = "{0}{1}{2}";                 // {0} - Title {1} - Separator {2} - Original Title {3} - Year
   public const string TITLE_SEPARATOR = " / ";
@@ -289,7 +289,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
         }
         Log.Debug("{0} IMDB {1} ({2})", strGrabber, movieDetails.Title, movieDetails.Year);
 
-        movieDetails.ThumbURL = Movie.image.Replace(".jpg","SX500.jpg");
+        movieDetails.ThumbURL = Movie.image.Replace(".jpg","SX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + ".jpg");
 
         // Director
         if (Movie.director != null && Movie.director.Count > 0)
