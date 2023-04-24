@@ -28,13 +28,12 @@ using Newtonsoft.Json;
 
 internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 {
-  const string strGrabberVersion = "20230329.I";
+  const string strGrabberVersion = "20230424.I";
 
   private string _strBody = string.Empty;
   private TMDBMovie tmdbMovie;
   private TMDBMovie imdbMovie;
 
-  public const int thumbSize = 500; // pixels size of picture -> horizontal
   public const string TITLE_MASK = "{0}{1}{2}"; // {0} - Title {1} - Separator {2} - Original Title {3} - Year
   public const string TITLE_SEPARATOR = " / ";
 
@@ -56,14 +55,14 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     string thumb = string.Empty;
 
     string uri;
-    string strUrl = String.Format("http://m.imdb.com/title/{0}", imdbId);
+    string strUrl = String.Format("https://m.imdb.com/title/{0}/", imdbId);
     string strBody = GetPage(strUrl, "utf-8", out uri);
     string regex = @"Poster"".src=""(?<poster>.*?_V1)";
     thumb = Regex.Match(strBody, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["poster"].Value;
 
     if (!string.IsNullOrEmpty(thumb))
     {
-      thumb += "_SX" + thumbSize + ".jpg";
+      thumb += "_SX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + ".jpg";
     }
 
     return thumb;
@@ -81,7 +80,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     if (string.IsNullOrEmpty(tmdbMovie.Plot) && string.IsNullOrEmpty(imdbMovie.Plot))
     {
-      string strUrl = String.Format("http://m.imdb.com/title/{0}", movie.IMDBNumber);
+      string strUrl = String.Format("https://m.imdb.com/title/{0}/", movie.IMDBNumber);
       // string regex = @"<p itemprop=""description"">(?<moviePlot>.+?)</p>";
       string regex = @"<h\d>Storyline<\/h\d>[^<]+?<div[^>]+?>[^<]+?<p[^>]*?>[^<]+<span[^>]*?>(?<moviePlot>[^<]+?)<";
 
@@ -97,7 +96,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       }
 
       // Full plot
-      strUrl = String.Format("http://m.imdb.com/title/{0}/plotsummary", movie.IMDBNumber);
+      strUrl = String.Format("https://m.imdb.com/title/{0}/plotsummary/", movie.IMDBNumber);
       // regex = @">Plot\sSummary.*?<p\sclass=""text-large"">(?<moviePlot>.*?)</p>";
       regex = @"<section id=.plot-summaries-content.>(?<moviePlot>.+?)<\/section";
 
@@ -132,7 +131,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     if (string.IsNullOrEmpty(_strBody))
     {
       string uri;
-      string strUrl = String.Format("http://m.imdb.com/title/{0}", movie.IMDBNumber);
+      string strUrl = String.Format("https://m.imdb.com/title/{0}/", movie.IMDBNumber);
       _strBody = GetPage(strUrl, "utf-8", out uri);
     }
 
@@ -541,7 +540,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
             {
               if (!string.IsNullOrWhiteSpace(match.Groups[2].Value))
               {
-                IMDB.IMDBUrl newUrl = new IMDB.IMDBUrl("http://www.imdb.com/name/" + match.Groups[2].Value, match.Groups[1].Value + ", DB", "IMDB");
+                IMDB.IMDBUrl newUrl = new IMDB.IMDBUrl("https://www.imdb.com/name/" + match.Groups[2].Value, match.Groups[1].Value + ", DB", "IMDB");
                 elements.Add(newUrl);
               }
             }
@@ -611,7 +610,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
           name = new HTMLUtil().ConvertHTMLToAnsi(name);
           name = Utils.RemoveParenthesis(name).Trim();
-          IMDB.IMDBUrl newUrl = new IMDB.IMDBUrl("http://www.imdb.com" + url, name, "IMDB");
+          IMDB.IMDBUrl newUrl = new IMDB.IMDBUrl("https://www.imdb.com" + url, name, "IMDB");
           elements.Add(newUrl);
           parser.skipToEndOf("</tr>");
         }
@@ -660,7 +659,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
         name = new HTMLUtil().ConvertHTMLToAnsi(name);
         name = Utils.RemoveParenthesis(name).Trim();
-        IMDB.IMDBUrl newUrl = new IMDB.IMDBUrl("http://www.imdb.com" + url, name, "IMDB");
+        IMDB.IMDBUrl newUrl = new IMDB.IMDBUrl("https://www.imdb.com" + url, name, "IMDB");
         elements.Add(newUrl);
         parser.skipToEndOf("</tr>");
       }
@@ -688,7 +687,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         int pos = url.URL.LastIndexOf("nm");
         string id = url.URL.Substring(pos, 9).Replace("/", string.Empty);
         actor.IMDBActorID = id;
-        url.URL = string.Format("http://m.imdb.com/name/{0}", id);
+        url.URL = string.Format("https://m.imdb.com/name/{0}/", id);
       }
       catch (Exception)
       {
@@ -795,7 +794,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
           }
           else
           {
-            actor.ThumbnailUrl = strThumb + "_V1_SX" + thumbSize + ".jpg";
+            actor.ThumbnailUrl = strThumb + "_V1_SX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + ".jpg";
           }
         }
         parser.Content = parserTxt;
@@ -1027,7 +1026,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       if (string.IsNullOrEmpty(tmdbActor.Biography) || FULL_ACTOR_INFO)
       {
         //Full Biography
-        string fullBioUrl = string.Format("http://m.imdb.com/name/{0}/bio?ref_=m_mn_ov_bio", actor.IMDBActorID);
+        string fullBioUrl = string.Format("https://m.imdb.com/name/{0}/bio?ref_=m_mn_ov_bio", actor.IMDBActorID);
         html = GetPage(fullBioUrl, "utf-8", out absoluteUri);
         parser.Content = html;
 
@@ -1071,7 +1070,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       bool isWriter = false;
       bool isSelf = false;
 
-      url.URL = string.Format("http://m.imdb.com/name/{0}/filmotype", actor.IMDBActorID);
+      url.URL = string.Format("https://m.imdb.com/name/{0}/filmotype/", actor.IMDBActorID);
       html = GetPage(url.URL, "utf-8", out absoluteUri);
 
       if (string.IsNullOrEmpty(html))
@@ -1171,11 +1170,11 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     string actorHtml = string.Empty;
     string uri = string.Empty;
 
-    if (actor) actorUrl = string.Format("http://m.imdb.com/name/{0}/filmotype/actor", imdbActor.IMDBActorID);
-    if (actress) actorUrl = string.Format("http://m.imdb.com/name/{0}/filmotype/actress", imdbActor.IMDBActorID);
-    if (director) actorUrl = string.Format("http://m.imdb.com/name/{0}/filmotype/director", imdbActor.IMDBActorID);
-    if (writer) actorUrl = string.Format("http://m.imdb.com/name/{0}/filmotype/writer", imdbActor.IMDBActorID);
-    if (self) actorUrl = string.Format("http://m.imdb.com/name/{0}/filmotype/self", imdbActor.IMDBActorID);
+    if (actor) actorUrl = string.Format("https://m.imdb.com/name/{0}/filmotype/actor/", imdbActor.IMDBActorID);
+    if (actress) actorUrl = string.Format("https://m.imdb.com/name/{0}/filmotype/actress/", imdbActor.IMDBActorID);
+    if (director) actorUrl = string.Format("https://m.imdb.com/name/{0}/filmotype/director/", imdbActor.IMDBActorID);
+    if (writer) actorUrl = string.Format("https://m.imdb.com/name/{0}/filmotype/writer/", imdbActor.IMDBActorID);
+    if (self) actorUrl = string.Format("https://m.imdb.com/name/{0}/filmotype/self/", imdbActor.IMDBActorID);
 
     actorHtml = GetPage(actorUrl, "utf-8", out uri);
     if (string.IsNullOrEmpty(actorHtml)) return;
@@ -1388,8 +1387,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
   {
     string absUri = string.Empty;
     ArrayList actorList = new ArrayList();
-    // string movieURL = string.Format("http://www.imdb.com/title/{0}/combined", imdbMovieID);
-    string movieURL = string.Format("http://www.imdb.com/title/{0}/reference", imdbMovieID);
+    // string movieURL = string.Format("https://www.imdb.com/title/{0}/combined/", imdbMovieID);
+    string movieURL = string.Format("https://www.imdb.com/title/{0}/reference/", imdbMovieID);
     string strBodyActors = GetPage(movieURL, "utf-8", out absUri);
 
     if (string.IsNullOrEmpty(strBodyActors))
@@ -1639,7 +1638,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       oReturn.Name = Actor.name;
       oReturn.IMDBActorID = imdbID;
       oReturn.MiniBiography = Actor.description;
-      oReturn.ThumbnailUrl = string.IsNullOrEmpty(Actor.image) ? string.Empty : Actor.image.Replace("_V1_","_V1_SX" + thumbSize);
+      oReturn.ThumbnailUrl = string.IsNullOrEmpty(Actor.image) ? string.Empty : Actor.image.Replace("_V1_","_V1_SX" + Convert.ToString((int)Thumbs.ThumbLargeResolution));
       oReturn.DateOfBirth = Actor.birthDate;
       oReturn.DateOfDeath = Actor.deathDate;
     }
@@ -1658,7 +1657,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     if (string.IsNullOrEmpty(_strBody))
     {
       string uri;
-      string strUrl = String.Format("http://m.imdb.com/title/{0}", imdbID);
+      string strUrl = String.Format("https://m.imdb.com/title/{0}/", imdbID);
       _strBody = GetPage(strUrl, "utf-8", out uri);
     }
 
@@ -1687,7 +1686,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       oReturn.Title = Movie.name;
       oReturn.IMDBNumber = imdbID;
       oReturn.Plot = Movie.description;
-      oReturn.ThumbURL = string.IsNullOrEmpty(Movie.image) ? string.Empty : Movie.image.Replace("_V1_","_V1_SX" + thumbSize);
+      oReturn.ThumbURL = string.IsNullOrEmpty(Movie.image) ? string.Empty : Movie.image.Replace("_V1_","_V1_SX" + Convert.ToString((int)Thumbs.ThumbLargeResolution));
 
       if (!string.IsNullOrEmpty(Movie.duration))
       {
@@ -1786,7 +1785,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     try
     {
       string uri = string.Empty;
-      string _awardsURL = string.Format("http://www.imdb.com/name/{0}/awards", IMDBID);
+      string _awardsURL = string.Format("https://www.imdb.com/name/{0}/awards/", IMDBID);
       string _awardsPage = GetPage(_awardsURL, "utf-8", out uri);
       if (string.IsNullOrEmpty(_awardsPage))
       {
@@ -1984,11 +1983,11 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
   private const string API_KEY = "e224fe4f3fec5f7b5570641f7cd3df3a"; //Inset API Key
   private static string API_LANG = CultureInfo.CurrentCulture.TwoLetterISOLanguageName.ToUpper(); 
 
-  private const string API_ImageUrl = "http://image.tmdb.org/t/p/";
+  private const string API_ImageUrl = "https://image.tmdb.org/t/p/";
   private const string API_PosterUrl = API_ImageUrl + "w500";
   private const string API_FanartUrl = API_ImageUrl + "original";
 
-  private const string API_BaseUrl = "http://api.themoviedb.org/3/";
+  private const string API_BaseUrl = "https://api.themoviedb.org/3/";
 
   public const string API_SearchPerson = API_BaseUrl + "find/{0}?api_key={1}&external_source=imdb_id";
   public const string API_DetailsPerson = API_BaseUrl + "person/{0}?api_key={1}";
