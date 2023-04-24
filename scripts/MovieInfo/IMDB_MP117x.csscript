@@ -289,7 +289,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
         }
         Log.Debug("{0} IMDB {1} ({2})", strGrabber, movieDetails.Title, movieDetails.Year);
 
-        movieDetails.ThumbURL = Movie.image.Replace(".jpg","SX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + ".jpg");
+        movieDetails.ThumbURL = Movie.image.Replace(".jpg","UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + ".jpg");
 
         // Director
         if (Movie.director != null && Movie.director.Count > 0)
