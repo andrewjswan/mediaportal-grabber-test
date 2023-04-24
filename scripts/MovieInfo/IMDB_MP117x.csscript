@@ -243,7 +243,6 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
         Log.Debug("{0} GetDetails IMDB = {1}, JSON not found.", strGrabber, movieDetails.IMDBNumber);
         return false;
       }
-      // json = json.Replace(@"""@", @"""");
 
       try
       {
@@ -931,7 +930,6 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       Log.Debug("{0} IMDB GetTechnical, JSON not found.", strGrabber);
       return string.Empty;
     }
-    // json = json.Replace(@"""@", @"""");
 
     try
     {

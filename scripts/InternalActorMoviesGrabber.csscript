@@ -1473,6 +1473,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   public class JsonIMDBPerson
   {
+      [JsonProperty("@type")]
       public string type { get; set; }
       public string url { get; set; }
       public string name { get; set; }
@@ -1516,7 +1517,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       Log.Debug("GetIMDBActorDetails IMDB = {0}, JSON not found.", imdbID);
       return oReturn;
     }
-    json = json.Replace(@"""@", @"""");
 
     try
     {
@@ -1565,7 +1565,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       Log.Debug("GetIMDBDetails IMDB = {0}, JSON not found.", imdbID);
       return oReturn;
     }
-    json = json.Replace(@"""@", @"""");
 
     try
     {
