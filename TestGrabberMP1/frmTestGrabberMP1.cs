@@ -216,19 +216,24 @@ namespace TestGrabberMP1
         };
 
         ArrayList actorList;
+        Log.Info("----------------------------------------------------------------------");
+        Log.Info("--- GetIMDBMovieActorsList: {0}", movie.IMDBNumber);
+        Log.Info("----------------------------------------------------------------------");
         try
         {
           actorList = InternalActorsGrabber.GetIMDBMovieActorsList(movie.IMDBNumber, true);
         }
         catch 
         {
+          Log.Info("--- ROLLBACK TO DEFAULT ----------------------------------------------");
           actorList = new ArrayList { "Bruce Willis", "nm0000246" };
         }
+        Log.Info("--- END --------------------------------------------------------------");
 
         foreach (string actor in actorList)
         {
           Log.Info("----------------------------------------------------------------------");
-          Log.Info("--- {0} - {1}", movie.IMDBNumber, actor);
+          Log.Info("--- GetActorDetails: {0} - {1}", movie.IMDBNumber, actor);
           Log.Info("----------------------------------------------------------------------");
 
           if (InternalActorsGrabber.GetActorDetails(new IMDB.IMDBUrl(actor, actor, "TEST"), out IMDBActor actorData))
@@ -244,9 +249,10 @@ namespace TestGrabberMP1
 
         if (actorList.Count > 0)
         {
-          Log.Info(string.Empty);
-          actorList = InternalActorsGrabber.FindIMDBActor(actorList[0].ToString());
           Log.Info("----------------------------------------------------------------------");
+          Log.Info("--- FindIMDBActor: {0} - {1}", movie.IMDBNumber, actorList[0].ToString());
+          Log.Info("----------------------------------------------------------------------");
+          actorList = InternalActorsGrabber.FindIMDBActor(actorList[0].ToString());
           foreach (string actor in actorList)
           {
             Log.Info("--- {0} - {1}", "Found", actor);
@@ -258,6 +264,8 @@ namespace TestGrabberMP1
         try
         {
           Log.Info("----------------------------------------------------------------------");
+          Log.Info("--- GetPlotImdb: {0}", movie.IMDBNumber);
+          Log.Info("----------------------------------------------------------------------");
           Log.Info("--- {0} - {1}", "Plot", InternalActorsGrabber.GetPlotImdb(ref movie));
           Log.Info("--- END --------------------------------------------------------------");
           Log.Info(string.Empty);
@@ -266,6 +274,8 @@ namespace TestGrabberMP1
 
         try
         {
+          Log.Info("----------------------------------------------------------------------");
+          Log.Info("--- GetThumbImdb: {0}", movie.IMDBNumber);
           Log.Info("----------------------------------------------------------------------");
           Log.Info("--- {0} - {1}", "Thumb", InternalActorsGrabber.GetThumbImdb(movie.IMDBNumber));
           Log.Info("--- END --------------------------------------------------------------");
