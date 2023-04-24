@@ -1473,10 +1473,10 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   public class JsonIMDBPerson
   {
-      [JsonProperty("@type")]
-      public string type { get; set; }
-      public string url { get; set; }
-      public string name { get; set; }
+    [JsonProperty("@type")]
+    public string type { get; set; }
+    public string url { get; set; }
+    public string name { get; set; }
   }
 
   public class JsonIMDBActor : JsonIMDBPerson
@@ -1487,18 +1487,37 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       public string deathDate { get; set; }
   }    
 
-  public class JsonIMDBObject
+  public class JsonIMDBAggregateRating
   {
-      public string url { get; set; }
-      public string name { get; set; }
-      public string image { get; set; }
-      public List<string> genre { get; set; }
-      public string contentRating { get; set; }
-      public List<JsonIMDBPerson> actor { get; set; }
-      public JsonIMDBPerson director { get; set; }
-      public List<JsonIMDBPerson> creator { get; set; }
-      public string description { get; set; }
-      public string duration { get; set; }
+    [JsonProperty("@type")]
+    public string type { get; set; }
+    public int ratingCount { get; set; }
+    public int bestRating { get; set; }
+    public int worstRating { get; set; }
+    public double ratingValue { get; set; }
+  }
+
+  public class JsonIMDBMovie
+  {
+    [JsonProperty("@context")]
+    public string context { get; set; }
+
+    [JsonProperty("@type")]
+    public string type { get; set; }
+    public string url { get; set; }
+    public string name { get; set; }
+    public string alternateName { get; set; }
+    public string image { get; set; }
+    public string description { get; set; }
+    public JsonIMDBAggregateRating aggregateRating { get; set; }
+    public string contentRating { get; set; }
+    public List<string> genre { get; set; }
+    public string datePublished { get; set; }
+    public string keywords { get; set; }
+    public List<JsonIMDBPerson> actor { get; set; }
+    public List<JsonIMDBPerson> director { get; set; }
+    public List<JsonIMDBPerson> creator { get; set; }
+    public string duration { get; set; }
   }
 
   public IMDBActor GetIMDBActorDetails(string imdbID, string page)
@@ -1568,7 +1587,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     try
     {
-      JsonIMDBObject Movie = JsonConvert.DeserializeObject<JsonIMDBObject>(json);
+      JsonIMDBMovie Movie = JsonConvert.DeserializeObject<JsonIMDBMovie>(json);
       if (Movie == null)
       {
         Log.Debug("GetIMDBDetails IMDB = {0}, JSON changed!?.", imdbID);
