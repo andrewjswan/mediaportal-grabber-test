@@ -81,35 +81,21 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     if (string.IsNullOrEmpty(tmdbMovie.Plot) && string.IsNullOrEmpty(imdbMovie.Plot))
     {
       string strUrl = String.Format("https://m.imdb.com/title/{0}/", movie.IMDBNumber);
-      // string regex = @"<p itemprop=""description"">(?<moviePlot>.+?)</p>";
-      string regex = @"<h\d>Storyline<\/h\d>[^<]+?<div[^>]+?>[^<]+?<p[^>]*?>[^<]+<span[^>]*?>(?<moviePlot>[^<]+?)<";
+      string regex = @"plotText.+?plainText.:.(?<moviePlot>.+?).,.__typename";
 
       _strBody = string.Empty;
       shortPlot = GetPlot(strUrl, regex, ref _strBody);
 
-      string pageNotFound = @"<h\d>Page not found</h\d>";
-
-      if (Regex.Match(_strBody, pageNotFound, RegexOptions.Singleline | RegexOptions.IgnoreCase).Success)
-      {
-        Log.Warn("GUIVideoArtistInfo - Actor movielist update Page not found: {0}", strUrl);
-        return false;
-      }
-
       // Full plot
       strUrl = String.Format("https://m.imdb.com/title/{0}/plotsummary/", movie.IMDBNumber);
-      // regex = @">Plot\sSummary.*?<p\sclass=""text-large"">(?<moviePlot>.*?)</p>";
-      regex = @"<section id=.plot-summaries-content.>(?<moviePlot>.+?)<\/section";
+      regex = @"plotText.+?plainText.:.(?<moviePlot>.+?)\"";
 
       string plotBody = string.Empty;
       string fullPlot = GetPlot(strUrl, regex, ref plotBody);
+
       if (!string.IsNullOrEmpty(fullPlot))
       {
-        fullPlot = Utils.stripHTMLtags(fullPlot);
-      }
-
-      if (fullPlot != string.Empty)
-      {
-        shortPlot = fullPlot.Trim();
+        fullPlot = Utils.stripHTMLtags(fullPlot).Trim();
       }
     }
     else
@@ -118,7 +104,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     }
     movie.PlotOutline = shortPlot;
 
-    // Director, actors, rating....
+    // Director, Actors, Rating....
     GetExtraDataImdb(ref movie);
 
     return true;
