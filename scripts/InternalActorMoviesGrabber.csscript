@@ -1679,9 +1679,10 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   private const string API_KEY = "e224fe4f3fec5f7b5570641f7cd3df3a"; //Inset API Key
   private static string API_LANG = CultureInfo.CurrentCulture.TwoLetterISOLanguageName.ToUpper(); 
+  private static string API_THUMB = (((int)Thumbs.Quality < 2) ? "w342" : ((int)Thumbs.Quality < 4) ? "w500" : "w780"); 
 
   private const string API_ImageUrl = "https://image.tmdb.org/t/p/";
-  private const string API_PosterUrl = API_ImageUrl + (((int)Thumbs.Quality < 2) ? "w342" : ((int)Thumbs.Quality < 4) ? "w500" : "w780");
+  private const string API_PosterUrl = API_ImageUrl + API_THUMB;
   private const string API_FanartUrl = API_ImageUrl + "original";
 
   private const string API_BaseUrl = "https://api.themoviedb.org/3/";
