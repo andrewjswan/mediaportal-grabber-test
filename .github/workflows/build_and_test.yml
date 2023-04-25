@@ -26,7 +26,8 @@ jobs:
       - name: Prepare environment 
         run: |
           mkdir "C:\ProgramData\Team MediaPortal\MediaPortal\Database\"
-
+          mkdir "C:\ProgramData\Team MediaPortal\MediaPortal\thumbs\Videos\Collection\"
+          
           xcopy Log4Net.config "C:\ProgramData\Team MediaPortal\MediaPortal\" /Y
           xcopy strings_en.xml "C:\ProgramData\Team MediaPortal\MediaPortal\Language\" /Y
           xcopy sqlite.dll ${{ github.workspace }}\TestGrabberMP1\bin\Release\ /Y
