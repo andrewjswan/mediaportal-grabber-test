@@ -34,7 +34,7 @@ jobs:
       - name: Upload languages
         run: |
           curl -s https://github.com/MediaPortal/MediaPortal-1/blob/master/mediaportal/MediaPortal.Base/language/strings_en.xml | bash
-        working-directory: C:\ProgramData\Team MediaPortal\MediaPortal\language\"
+        working-directory: C:\ProgramData\Team MediaPortal\MediaPortal\language\
         shell: bash
   
       - name: Run Tests
