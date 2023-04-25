@@ -433,7 +433,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
           string role = HttpUtility.HtmlDecode(m.Groups["role"].Value.Trim());
           string aka = HttpUtility.HtmlDecode(m.Groups["aka"].Value.Trim());
 
-          if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name))
+          if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(name))
           {
             continue;
           }
