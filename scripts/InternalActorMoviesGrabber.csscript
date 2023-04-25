@@ -90,7 +90,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       // Full plot
       strUrl = String.Format("https://m.imdb.com/title/{0}/plotsummary/", movie.IMDBNumber);
-      regex = @"plotText.+?plainText.:.(?<moviePlot>.+?)\"";
+      regex = @"plotText.+?plainText.:.(?<moviePlot>.+?)""";
 
       string plotBody = string.Empty;
       string fullPlot = GetPlot(strUrl, regex, ref plotBody);
@@ -382,7 +382,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
             {
               if (!string.IsNullOrWhiteSpace(match.Groups[2].Value))
               {
-                IMDB.IMDBUrl newUrl = new IMDB.IMDBUrl(string.Format("https://www.imdb.com/name/{0}/", match.Groups[2].Value), match.Groups[1].Value + ", DB", "IMDB");
+                IMDB.IMDBUrl newUrl = new IMDB.IMDBUrl(string.Format(@"https://www.imdb.com/name/{0}/", match.Groups[2].Value), match.Groups[1].Value + ", DB", "IMDB");
                 elements.Add(newUrl);
               }
             }
@@ -437,7 +437,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
           {
             continue;
           }
-          url = string.Format("https://www.imdb.com/name/{0}/", url);
+          url = string.Format(@"https://www.imdb.com/name/{0}/", url);
 
           if (!string.IsNullOrEmpty(role))
           {
