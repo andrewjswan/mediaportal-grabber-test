@@ -124,6 +124,53 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     return true;
   }
 
+  private string GetPlot(string strUrl, string regex, ref string strBody)
+  {
+    string absoluteUri;
+    strBody = HttpUtility.HtmlDecode(GetPage(strUrl, "utf-8", out absoluteUri));
+
+    if (strBody != null)
+    {
+      string shortPlot = Regex.Match(strBody, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["moviePlot"].Value.
+        Replace("&amp;", "&").
+        Replace("&lt;", "<").
+        Replace("&gt;", ">").
+        Replace("&quot;", "\"").
+        Replace("&apos;", "'").
+        Replace("No overview found.", string.Empty).Trim();
+
+
+      shortPlot = Utils.stripHTMLtags(shortPlot);
+
+      // extra cleanup
+      if (!string.IsNullOrEmpty(shortPlot))
+      {
+        int index = shortPlot.LastIndexOf(@"See full summary");
+
+        if (index > 0)
+        {
+          shortPlot = shortPlot.Remove(index);
+        }
+
+        index = shortPlot.LastIndexOf(@"See full synopsis");
+
+        if (index > 0)
+        {
+          shortPlot = shortPlot.Remove(index);
+        }
+
+        index = shortPlot.LastIndexOf("\n");
+
+        if (index > 0)
+        {
+          shortPlot = shortPlot.Remove(index);
+        }
+      }
+      return shortPlot;
+    }
+    return string.Empty;
+  }
+
   private void GetExtraDataImdb(ref IMDBMovie movie)
   {
     string regex = string.Empty;
@@ -196,11 +243,11 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     List<TMDBPerson> MovieCrew = new List<TMDBPerson>();
     if (tmdbMovie.Crew != null)
     {
-      MovieCrew.AddRange(tmdbMovie.Crew)
+      MovieCrew.AddRange(tmdbMovie.Crew);
     }
     if (imdbMovie.Crew != null)
     {
-      MovieCrew.AddRange(imdbMovie.Crew)
+      MovieCrew.AddRange(imdbMovie.Crew);
     }
     MovieCrew = MovieCrew.Distinct(new TMDBPersonEqualityComparer());
 
@@ -433,53 +480,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     }
 
     _strBody = string.Empty;
-  }
-
-  private string GetPlot(string strUrl, string regex, ref string strBody)
-  {
-    string absoluteUri;
-    strBody = HttpUtility.HtmlDecode(GetPage(strUrl, "utf-8", out absoluteUri));
-
-    if (strBody != null)
-    {
-      string shortPlot = Regex.Match(strBody, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["moviePlot"].Value.
-        Replace("&amp;", "&").
-        Replace("&lt;", "<").
-        Replace("&gt;", ">").
-        Replace("&quot;", "\"").
-        Replace("&apos;", "'").
-        Replace("No overview found.", string.Empty).Trim();
-
-
-      shortPlot = Utils.stripHTMLtags(shortPlot);
-
-      // extra cleanup
-      if (!string.IsNullOrEmpty(shortPlot))
-      {
-        int index = shortPlot.LastIndexOf(@"See full summary");
-
-        if (index > 0)
-        {
-          shortPlot = shortPlot.Remove(index);
-        }
-
-        index = shortPlot.LastIndexOf(@"See full synopsis");
-
-        if (index > 0)
-        {
-          shortPlot = shortPlot.Remove(index);
-        }
-
-        index = shortPlot.LastIndexOf("\n");
-
-        if (index > 0)
-        {
-          shortPlot = shortPlot.Remove(index);
-        }
-      }
-      return shortPlot;
-    }
-    return string.Empty;
   }
 
   #endregion
