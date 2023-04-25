@@ -1,7 +1,8 @@
+//css_reference System.Core;
+
 //css_reference "core.dll";
 //css_reference "Databases.dll";
 //css_reference "utils.dll";
-//css_reference "System.Core";
 //css_reference "Newtonsoft.Json.dll";
 
 using MediaPortal.GUI.Library;

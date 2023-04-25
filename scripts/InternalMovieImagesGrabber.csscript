@@ -1,7 +1,8 @@
+//css_reference System.Core;
+
 //css_reference "core.dll";
 //css_reference "Databases.dll";
 //css_reference "utils.dll";
-//css_reference "System.Core";
 //css_reference "Newtonsoft.Json.dll";
 
 using System;
@@ -9,9 +10,10 @@ using System.Text;
 using System.IO;
 using System.Net;
 using System.Web;
-using System.Text.RegularExpressions;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 using MediaPortal.GUI.Library;
 using MediaPortal.Util;
@@ -20,6 +22,8 @@ using Newtonsoft.Json;
 
 internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInternalMovieImagesGrabber
 {
+  const string strGrabberVersion = "20230425.I";
+
   public ArrayList GetIMDBImages(string imdbID, bool defaultOnly)
   {
     string defaultPic = string.Empty;
@@ -30,7 +34,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     string defaultPosterPageLinkURL = string.Format("https://www.imdb.com/title/{0}/", imdbID);
     string strBodyPicDefault = GetPage(defaultPosterPageLinkURL, "utf-8");
 
-    Match jpgDefault = Regex.Match(strBodyPicDefault, "ld\+json[^}]+?image.:.(?<image>.+?)\.jpg", RegexOptions.Singleline);
+    Match jpgDefault = Regex.Match(strBodyPicDefault, @"ld\+json[^}]+?image.:.(?<image>.+?)\.jpg", RegexOptions.Singleline);
 
     if (jpgDefault.Success)
     {
@@ -73,7 +77,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
         return imdbImages;
       }
 
-      foreach (JsonIMDBImages image in Images.image)
+      foreach (JsonIMDBImage image in Images.image)
       {
         if (!string.IsNullOrEmpty(image.width) && !string.IsNullOrEmpty(image.height))
         {
@@ -85,7 +89,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
               // No default Picture again if it's here
               if (image.url != defaultPic)
               {
-                imdbImages.Add(posterUrl);
+                imdbImages.Add(image.url);
               }
             }
           }
@@ -133,7 +137,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
         Match mImpAw = mGoogle[i];
         // Check if /year/ is in link, if no that is no cover
         string year = mImpAw.Groups["year"].Value.Replace("/", string.Empty);
-        if (!string.Empty(year))
+        if (!string.IsNullOrEmpty(year))
         {
           string url2 = mImpAw.Value;
           url2 = "http://" + url2;
@@ -222,8 +226,8 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
   private static string API_THUMB = (((int)Thumbs.Quality < 2) ? "w342" : ((int)Thumbs.Quality < 4) ? "w500" : "w780"); 
 
   private const string API_ImageUrl = "https://image.tmdb.org/t/p/";
-  private static string API_PosterUrl = API_ImageUrl + API_THUMB;
-  private const string API_FanartUrl = API_ImageUrl + "original";
+  private static string API_PosterUrl = API_ImageUrl + API_THUMB + "/{0}";
+  private const string API_FanartUrl = API_ImageUrl + "original/{0}";
 
   private const string API_BaseUrl = "https://api.themoviedb.org/3/";
 
@@ -231,12 +235,30 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
   public const string API_SearchPerson = API_BaseUrl + "search/person";
   public const string API_MovieImages = API_BaseUrl + "movie/{0}/images";
 
+  private static string MakeTMDBUrl(string url, string what, string query = null, string lang = "en", int year = 0)
+  {
+    string sURL = url.Replace("{0}", what) + "?api_key=" + API_KEY;
+    if (!string.IsNullOrEmpty(lang))
+    {
+      sURL += "&language=" + lang;
+    }
+    if (!string.IsNullOrEmpty(query))
+    {
+      sURL += "&query='" + query + "'";
+    }
+    if (year > 0)
+    {
+      sURL += "&year" + year;
+    }
+    return sURL;
+  }
+
   #endregion
 
   #region Fanart
 
   public ArrayList GetTmdbFanartByApi(int movieId, string imdbTT, string title, bool random, int countFA,
-    string strSearch, out string fileFanArtDefault, out string fanartUrl)
+                                      string strSearch, out string fileFanArtDefault, out string fanartUrl)
   {
     ArrayList fanartList = new ArrayList();
     bool searchByString = false;
@@ -248,23 +270,24 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
       string strAbsUrl = string.Empty;
       string tmdbUrl = string.Empty; // TMDB Fanart api URL
       // First try by IMDB id (100% accurate) then, if fail, by movie name (first result will be taken as defult fanart, no random)
-      if (imdbTT != string.Empty && imdbTT.StartsWith("tt"))
+      if (!string.IsNullOrEmpty(imdbTT) && imdbTT.StartsWith("tt"))
       {
-        tmdbUrl = string.Format("API_MovieImages?api_key=2ed40b5d82aa804a2b1fcedb5ca8d97a", imdbTT);
+        tmdbUrl = MakeTMDBUrl(API_MovieImages, imdbTT, string.Empty, string.Empty);
       }
       else
       {
-        if (strSearch == string.Empty)
+        if (string.IsNullOrEmpty(strSearch))
         {
-          tmdbUrl = string.Format("API_SearchMovie?api_key=2ed40b5d82aa804a2b1fcedb5ca8d97a&query={0}", title);
+          tmdbUrl = MakeTMDBUrl(API_SearchMovie, string.Empty, title, string.Empty);
         }
         else
         {
-          tmdbUrl = string.Format("API_SearchMovie?api_key=2ed40b5d82aa804a2b1fcedb5ca8d97a&query={0}", strSearch);
+          tmdbUrl = MakeTMDBUrl(API_SearchMovie, string.Empty, strSearch, string.Empty);
         }
         searchByString = true;
         random = false;
       }
+
       // Download fanart xml 
       string tmdbXml = string.Empty;
 
@@ -305,7 +328,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
 
             if (!string.IsNullOrEmpty(strBd))
             {
-              strBd = string.Format("API_FanartUrl/{0}", strBd); // w500 or w1280 or original (image width)
+              strBd = string.Format(API_FanartUrl, strBd);
               fanartList.Add(strBd);
             }
           }
@@ -398,7 +421,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     {
       if (API_LANG != "en")
       {
-        string localPosterPageLinkUrl = string.Format("API_MovieImages?api_key=2ed40b5d82aa804a2b1fcedb5ca8d97a&language={1}", imdbMovieID, API_LANG);
+        string localPosterPageLinkUrl = MakeTMDBUrl(API_MovieImages, imdbMovieID, string.Empty, API_LANG);
         GetTmdbPage(localPosterPageLinkUrl, "utf-8", out uri, ref strBodyTmdb);
         string localPosterBlock = Regex.Match(strBodyTmdb, @"""posters"":\[.*?\]", RegexOptions.IgnoreCase | RegexOptions.Singleline).Value;
         // Get all cover links and put it in the "cover" group
@@ -407,12 +430,12 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
         foreach (Match cover in localCovers)
         {
           string coverUrl = string.Empty;
-          coverUrl = string.Format("API_PosterUrl/{0}", cover.Groups["cover"].Value);
+          coverUrl = string.Format(API_PosterUrl, cover.Groups["cover"].Value);
           imageList.Add(coverUrl);
         }
       }
 
-      string defaultPosterPageLinkUrl = string.Format("API_MovieImages?api_key=2ed40b5d82aa804a2b1fcedb5ca8d97a&language=en", imdbMovieID);
+      string defaultPosterPageLinkUrl = MakeTMDBUrl(API_MovieImages, imdbMovieID);
       GetTmdbPage(defaultPosterPageLinkUrl, "utf-8", out uri, ref strBodyTmdb);
       string posterBlock = Regex.Match(strBodyTmdb, @"""posters"":\[.*?\]", RegexOptions.IgnoreCase | RegexOptions.Singleline).Value;
       // Get all cover links and put it in the "cover" group
@@ -421,7 +444,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
       foreach (Match cover in covers)
       {
         string coverUrl = string.Empty;
-        coverUrl = string.Format("API_PosterUrl/{0}", cover.Groups["cover"].Value);
+        coverUrl = string.Format(API_PosterUrl, cover.Groups["cover"].Value);
         imageList.Add(coverUrl);
       }
 
@@ -432,7 +455,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     {
       if (API_LANG != "en")
       {
-        string localPosterPageLinkUrl = string.Format("API_SearchMovie?api_key=2ed40b5d82aa804a2b1fcedb5ca8d97a&query={0}&language={1}", movieTitle, API_LANG);
+        string localPosterPageLinkUrl = MakeTMDBUrl(API_SearchMovie, string.Empty, movieTitle, API_LANG);
         GetTmdbPage(localPosterPageLinkUrl, "utf-8", out uri, ref strBodyTmdb);
 
         // Get all cover links and put it in the "cover" group
@@ -441,12 +464,12 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
         foreach (Match cover in localCovers)
         {
           string coverUrl = string.Empty;
-          coverUrl = string.Format("API_PosterUrl/{0}", cover.Groups["cover"].Value);
+          coverUrl = string.Format(API_PosterUrl, cover.Groups["cover"].Value);
           imageList.Add(coverUrl);
         }
       }
 
-      string defaultPosterPageLinkUrl = string.Format("API_SearchMovie?api_key=2ed40b5d82aa804a2b1fcedb5ca8d97a&query={0}&language=en", movieTitle);
+      string defaultPosterPageLinkUrl = MakeTMDBUrl(API_SearchMovie, string.Empty, movieTitle);
       GetTmdbPage(defaultPosterPageLinkUrl, "utf-8", out uri, ref strBodyTmdb);
 
       // Get all cover links and put it in the "cover" group
@@ -455,7 +478,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
       foreach (Match cover in covers)
       {
         string coverUrl = string.Empty;
-        coverUrl = string.Format("API_PosterUrl/{0}", cover.Groups["cover"].Value);
+        coverUrl = string.Format(API_PosterUrl, cover.Groups["cover"].Value);
         imageList.Add(coverUrl);
       }
     }
@@ -468,7 +491,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     string uri = string.Empty;
     ArrayList actorThumbs = new ArrayList();
 
-    string defaultPosterPageLinkUrl = string.Format("API_SearchPerson?api_key=2ed40b5d82aa804a2b1fcedb5ca8d97a&query={0}&language=en", actorName);
+    string defaultPosterPageLinkUrl = MakeTMDBUrl(API_SearchPerson, string.Empty, actorName);
     GetTmdbPage(defaultPosterPageLinkUrl, "utf-8", out uri, ref strXml);
 
     MatchCollection actorImages = Regex.Matches(strXml, @"""profile_path"":""/(?<cover>.*?jpg)""");
@@ -481,7 +504,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     foreach (Match actorImage in actorImages)
     {
       string actor = string.Empty;
-      actor = string.Format("API_PosterUrl/{0}", actorImage.Groups["cover"].Value);
+      actor = string.Format(API_PosterUrl, actorImage.Groups["cover"].Value);
       actorThumbs.Add(actor);
     }
 

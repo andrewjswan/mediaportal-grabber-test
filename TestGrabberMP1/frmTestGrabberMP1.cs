@@ -24,6 +24,7 @@ namespace TestGrabberMP1
     private static IIMDBScriptGrabber _grabber;
     private static AsmHelper _asmHelper;
     private static IIMDBInternalActorsScriptGrabber InternalActorsGrabber;
+    private static InternalCSScriptGrabbersLoader.Movies.IInternalMovieImagesGrabber InternalMovieImagesGrabber;
 
     private readonly bool autoStart;
 
@@ -155,6 +156,31 @@ namespace TestGrabberMP1
       return true;
     }
 
+    private static bool LoadThumbScript()
+    {
+      string scriptFileName = AppDomain.CurrentDomain.BaseDirectory + @"..\..\..\scripts\InternalMovieImagesGrabber.csscript";
+
+      // Script support script.csscript
+      if (!File.Exists(scriptFileName))
+      {
+        Log.Error("InternalMovieImagesGrabber LoadScript() - grabber script not found: {0}", scriptFileName);
+        return false;
+      }
+
+      try
+      {
+        _asmHelper = new AsmHelper(CSScript.Load(scriptFileName, null, false));
+        InternalMovieImagesGrabber = (InternalCSScriptGrabbersLoader.Movies.IInternalMovieImagesGrabber)_asmHelper.CreateObject("MovieImagesGrabber");
+      }
+      catch (Exception ex)
+      {
+        Log.Error("InternalMovieImagesGrabber LoadScript() - file: {0}, message : {1}", scriptFileName, ex.Message);
+        return false;
+      }
+
+      return true;
+    }
+
     void RunGrabber()
     {
       string[] grabbers = Utils.GetFiles(AppDomain.CurrentDomain.BaseDirectory + @"..\..\..\scripts\MovieInfo\");
@@ -208,13 +234,13 @@ namespace TestGrabberMP1
         }
       }
 
+      IMDBMovie movie = new IMDBMovie
+      {
+        IMDBNumber = "tt0499549"
+      };
+
       if (LoadScript())
       {
-        IMDBMovie movie = new IMDBMovie
-        {
-          IMDBNumber = "tt0499549"
-        };
-
         ArrayList actorList;
         Log.Info("----------------------------------------------------------------------");
         Log.Info("--- GetIMDBMovieActorsList: {0}", movie.IMDBNumber);
@@ -255,7 +281,7 @@ namespace TestGrabberMP1
         if (actorList.Count > 0)
         {
           Log.Info("----------------------------------------------------------------------");
-          Log.Info("--- FindIMDBActor: {0} - {1}", movie.IMDBNumber, actorList[0].ToString());
+          Log.Info("--- FindIMDBActor: {0} - {1}", "Bruce Willise");
           Log.Info("----------------------------------------------------------------------");
           actorList = InternalActorsGrabber.FindIMDBActor("https://www.imdb.com/find/?s=nm&q=Bruce%20Willis");
           foreach (IMDB.IMDBUrl actor in actorList)
@@ -271,7 +297,9 @@ namespace TestGrabberMP1
           Log.Info("----------------------------------------------------------------------");
           Log.Info("--- GetPlotImdb: {0}", movie.IMDBNumber);
           Log.Info("----------------------------------------------------------------------");
-          Log.Info("--- {0} - {1}", "Plot", InternalActorsGrabber.GetPlotImdb(ref movie));
+          InternalActorsGrabber.GetPlotImdb(ref movie);
+          Log.Info("--- {0} - {1}", "Plot", movie.PlotOutline.Replace("\n", " "));
+          Log.Info("--- {0} - {1}", "Plot", movie.Plot.Replace("\n", " "));
           Log.Info("--- END --------------------------------------------------------------");
           Log.Info(string.Empty);
         }
@@ -287,6 +315,63 @@ namespace TestGrabberMP1
           Log.Info(string.Empty);
         }
         catch { }
+      }
+
+      if (LoadThumbScript())
+      {
+        Log.Info("----------------------------------------------------------------------");
+        Log.Info("--- GetIMDBImages: {0}", movie.IMDBNumber);
+        Log.Info("----------------------------------------------------------------------");
+        ArrayList imageList = InternalMovieImagesGrabber.GetIMDBImages(movie.IMDBNumber, false);
+        foreach (string image in imageList)
+        {
+          Log.Info("--- {0} - {1}", "Found", image);
+        }
+        Log.Info("--- END --------------------------------------------------------------");
+        Log.Info(string.Empty);
+
+        Log.Info("----------------------------------------------------------------------");
+        Log.Info("--- GetIMPAwardsImages: {0}", movie.IMDBNumber);
+        Log.Info("----------------------------------------------------------------------");
+        imageList = InternalMovieImagesGrabber.GetIMPAwardsImages("Avatar", movie.IMDBNumber);
+        foreach (string image in imageList)
+        {
+          Log.Info("--- {0} - {1}", "Found", image);
+        }
+        Log.Info("--- END --------------------------------------------------------------");
+        Log.Info(string.Empty);
+        Log.Info("----------------------------------------------------------------------");
+        Log.Info("--- GetTmdbCoverImages: {0}", movie.IMDBNumber);
+        Log.Info("----------------------------------------------------------------------");
+        imageList = InternalMovieImagesGrabber.GetTmdbCoverImages("Avatar", movie.IMDBNumber);
+        foreach (string image in imageList)
+        {
+          Log.Info("--- {0} - {1}", "Found", image);
+        }
+        Log.Info("--- END --------------------------------------------------------------");
+        Log.Info(string.Empty);
+        Log.Info("----------------------------------------------------------------------");
+        Log.Info("--- GetTmdbFanartByApi: {0}", movie.IMDBNumber);
+        Log.Info("----------------------------------------------------------------------");
+        imageList = InternalMovieImagesGrabber.GetTmdbFanartByApi(-1, movie.IMDBNumber, "Avatar", true, 5, string.Empty, 
+                                                                  out string _fileFanArtDefault, out string _fanartUrl);
+        Log.Info("--- {0} = {1}", _fileFanArtDefault, _fanartUrl);
+        foreach (string image in imageList)
+        {
+          Log.Info("--- {0} - {1}", "Found", image);
+        }
+        Log.Info("--- END --------------------------------------------------------------");
+        Log.Info(string.Empty);
+        Log.Info("----------------------------------------------------------------------");
+        Log.Info("--- GetTmdbActorImage: {0}", "Bruce Willise");
+        Log.Info("----------------------------------------------------------------------");
+        imageList = InternalMovieImagesGrabber.GetTmdbActorImage("Bruce Willise");
+        foreach (string image in imageList)
+        {
+          Log.Info("--- {0} - {1}", "Found", image);
+        }
+        Log.Info("--- END --------------------------------------------------------------");
+        Log.Info(string.Empty);
       }
     }
 

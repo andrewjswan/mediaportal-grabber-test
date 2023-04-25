@@ -1,7 +1,8 @@
-﻿//css_reference "core.dll";
+﻿//css_reference System.Core;
+
+//css_reference "core.dll";
 //css_reference "Databases.dll";
 //css_reference "utils.dll";
-//css_reference "System.Core";
 //css_reference "Newtonsoft.Json.dll";
 
 using MediaPortal.GUI.Library;
@@ -815,7 +816,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     return url;
   }
 
-  private static string MakeTMDBUrl(string url, string what, string query = "", int year = 0)
+  private static string MakeTMDBUrl(string url, string what, string query = null, int year = 0)
   {
     string sURL = url.Replace("{0}", what) + "?api_key=" + Grabber.API_KEY;
     if (!string.IsNullOrEmpty(API_LANG_URL))
