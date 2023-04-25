@@ -35,7 +35,7 @@ jobs:
         
       - name: Upload languages
         run: |
-          curl -O -L https://github.com/MediaPortal/MediaPortal-1/blob/master/mediaportal/MediaPortal.Base/language/strings_en.xml | bash
+          curl -O -L https://github.com/MediaPortal/MediaPortal-1/blob/master/mediaportal/MediaPortal.Base/language/strings_en.xml
         working-directory: C:\ProgramData\Team MediaPortal\MediaPortal\language\
         shell: bash
   
