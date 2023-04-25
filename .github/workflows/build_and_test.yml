@@ -26,6 +26,7 @@ jobs:
       - name: Prepare environment 
         run: |
           xcopy Log4Net.config "C:\ProgramData\Team MediaPortal\MediaPortal\" /Y
+          xcopy ..\scripts\InternalMovieImagesGrabber.csscript C:\ProgramData\Team MediaPortal\MediaPortal\scripts\ /Y
           mkdir "C:\ProgramData\Team MediaPortal\MediaPortal\Language\"
           mkdir "C:\ProgramData\Team MediaPortal\MediaPortal\Database\"
           del c:\Windows\Microsoft.NET\assembly\GAC_MSIL\Newtonsoft.Json\v4.0_12.0.0.0__30ad4fe6b2a6aeed\Newtonsoft.Json.dll /F
