@@ -490,17 +490,17 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
   {
     ArrayList elements = new ArrayList();
 
+    string dbActor = string.Empty;
+    Regex regex = new Regex(@"q=(.+)");
+    Match match = regex.Match(strURL);
+    if (match.Success)
+    {
+      dbActor = match.Groups[1].Value;
+      dbActor = HttpUtility.UrlDecode(dbActor);
+    }
+
     try
     {
-      string dbActor = string.Empty;
-      Regex regex = new Regex(@"q=(.+)");
-      Match match = regex.Match(strURL);
-      if (match.Success)
-      {
-        dbActor = match.Groups[1].Value;
-        dbActor = HttpUtility.UrlDecode(dbActor);
-      }
-
       if (!string.IsNullOrEmpty(dbActor))
       {
         ArrayList lstActors = new ArrayList();
@@ -515,7 +515,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
             {
               if (!string.IsNullOrWhiteSpace(match.Groups[2].Value))
               {
-                IMDB.IMDBUrl newUrl = new IMDB.IMDBUrl("https://www.imdb.com/name/" + match.Groups[2].Value, match.Groups[1].Value + ", DB", "IMDB");
+                IMDB.IMDBUrl newUrl = new IMDB.IMDBUrl(string.Format("https://www.imdb.com/name/{0}/", match.Groups[2].Value), match.Groups[1].Value + ", DB", "IMDB");
                 elements.Add(newUrl);
               }
             }
@@ -1259,12 +1259,11 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   public ArrayList GetIMDBMovieActorsList(string imdbMovieID, bool shortActorsList)
   {
-    string absUri = string.Empty;
     ArrayList actorList = new ArrayList();
-    // string movieURL = string.Format("https://www.imdb.com/title/{0}/combined/", imdbMovieID);
+
+    string absUri = string.Empty;
     string movieURL = string.Format("https://www.imdb.com/title/{0}/reference/", imdbMovieID);
     string strBodyActors = GetPage(movieURL, "utf-8", out absUri);
-
     if (string.IsNullOrEmpty(strBodyActors))
     {
       return actorList;
@@ -1273,8 +1272,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     // Director
     string strDirectorImdbId = string.Empty;
     string strDirectorName = string.Empty;
-    string regexBlockPattern = @"name=.directors?.(?<directors_block>.*?)<h\d";
-    string regexPattern = @"<a\s+href=.\/name\/(?<idDirector>nm\d{7,8})\/.[^>]*>(?<movieDirectors>[^<]+)<\/a>";
+    string regexBlockPattern = @"Director:(?<directors_block>.*?)<\/div";
+    string regexPattern = @"href=.\/name\/(?<idDirector>nm\d{7,8}).>(?<movieDirectors>[^<]+)<\/a>";
     string regexBlock = Regex.Match(HttpUtility.HtmlDecode(strBodyActors), regexBlockPattern, RegexOptions.Singleline).Groups["directors_block"].Value;
     
     strDirectorImdbId = Regex.Match(regexBlock, regexPattern, RegexOptions.Singleline).Groups["idDirector"].Value;
@@ -1292,9 +1291,9 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     }
 
     // Writers
-    regexBlockPattern = @"name=.writers?.(?<writers_block>.*?)<h\d";
+    regexBlockPattern = @"Writers:(?<writers_block>.*?)<\/div";
+    regexPattern = @"href=.\/name\/(?<imdbWriterId>nm\d{7,8}).>(?<writer>[^<]+)<\/a>";
     regexBlock = Regex.Match(HttpUtility.HtmlDecode(strBodyActors), regexBlockPattern, RegexOptions.Singleline).Groups["writers_block"].Value;
-    regexPattern = @"href=.\/name\/(?<imdbWriterId>nm\d{7,8})\/[^>]*>(?<writer>[^<]+)<\/a>[^(]*(?<wrole>[^)]*\))|href=.\/name\/(?<imdbWriterId>nm\d{7,8})\/[^>]*>(?<writer>[^<]+)<\/a>(?<wrole>)";
 
     MatchCollection mc = Regex.Matches(regexBlock, regexPattern);
 
@@ -1314,52 +1313,30 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
           strWriterName = strTMDBWriterName;
         }
 
-        string writerRole = string.Empty;
-        writerRole = HttpUtility.HtmlDecode(m.Groups["wrole"].Value.Trim());
-
         bool found = false;
 
         for (int i = 0; i < actorList.Count; i++)
         {
-          if (writerId != null)
+          if (!string.IsNullOrEmpty(writerId))
           {
             if (actorList[i].ToString().Contains(writerId))
             {
-              // Check if writer is also director and add new role
-              if (!string.IsNullOrEmpty(writerRole))
-              {
-                actorList[i] = actorList[i] + ", " + GUILocalizeStrings.Get(200) + " " + writerRole.Replace("(", string.Empty).Replace(")", string.Empty);
-                found = true;
-              }
-              else
-              {
-                actorList[i] = actorList[i] + ", " + GUILocalizeStrings.Get(200).Replace(":", string.Empty);
-                found = true;
-              }
+              actorList[i] = actorList[i] + ", " + GUILocalizeStrings.Get(200).Replace(":", string.Empty);
+              found = true;
               break;
             }
           }
         }
 
-        if (!found && writerId != string.Empty)
+        if (!found && !string.IsNullOrEmpty(writerId))
         {
-          if (!string.IsNullOrEmpty(writerRole))
-          {
-            actorList.Add(strWriterName + "|" + writerId + "|" +
-                        GUILocalizeStrings.Get(200) + " " + writerRole.Replace("(", string.Empty).Replace(")", string.Empty));
-          }
-          else
-          {
-            actorList.Add(strWriterName + "|" + writerId + "|" +
-                        GUILocalizeStrings.Get(200).Replace(":", string.Empty));
-          }
+          actorList.Add(strWriterName + "|" + writerId + "|" + GUILocalizeStrings.Get(200).Replace(":", string.Empty));
         }
       }
     }
 
-    // cast
-    regexBlockPattern = @"<table class=.cast(?:_list)?"">.*?<\/table>";
-    // regexPattern = @"<td[^<]*<a\s+href=.\/name\/(?<imdbActorID>nm\d{7,8})\/[^>]*?>[\s\S]+?itemprop=.name.>(?<actor>[^<]*)<\/span>[\s\S]+?<td.class=.char(?:acter)?.>(?<role>.+?)<*?<\/td>";
+    // Cast
+    regexBlockPattern = @"<table class=.cast(?:_list)?.>.*?<\/table>";
     regexPattern = @"<td[^<]*itemprop=""actor""[^<]*<a\s+href=""\/name\/(?<imdbActorID>nm\d{7,8})\/[^>]*>[^<]*?<span[^>]*?>(?<actor>[^<]*)<\/span>.*?<td.class=""character"">(?<role>.*?)<*?<\/td>";
     Match castBlock = Regex.Match(strBodyActors, regexBlockPattern, RegexOptions.Singleline);
     string strCastBlock = HttpUtility.HtmlDecode(castBlock.Value);
@@ -1414,7 +1391,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
           {
             if (actorList[i].ToString().Contains(strActorID))
             {
-              if (strRole != string.Empty)
+              if (!string.IsNullOrEmpty(strRole))
               {
                 actorList[i] = actorList[i] + ", " + strRole;
               }
@@ -1424,19 +1401,16 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
             }
           }
 
-          if (!found && strActorID != string.Empty)
+          if (!found && !string.IsNullOrEmpty(strActorID))
           {
             actorList.Add(strActorName + "|" + strActorID + "|" + strRole);
           }
 
           actorsCount++;
 
-          if (shortActorsList)
+          if (shortActorsList && actorsCount >= 15)
           {
-            if (actorsCount >= 15)
-            {
-              return actorList;
-            }
+            break;
           }
         }
       }
@@ -1882,7 +1856,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
   private static string API_LANG = CultureInfo.CurrentCulture.TwoLetterISOLanguageName.ToUpper(); 
 
   private const string API_ImageUrl = "https://image.tmdb.org/t/p/";
-  private const string API_PosterUrl = API_ImageUrl + "w500";
+  private const string API_PosterUrl = API_ImageUrl + (int)Thumbs.ThumbQuality < 2 ? "w342" : (int)Thumbs.ThumbQuality < 4 ? "w500" : "w780";
   private const string API_FanartUrl = API_ImageUrl + "original";
 
   private const string API_BaseUrl = "https://api.themoviedb.org/3/";
