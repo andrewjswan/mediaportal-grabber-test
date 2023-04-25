@@ -192,47 +192,24 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       movie.Year = DateTime.Today.Year + 3;
     }
 
-    // Director
-
-    // TMDB Directors and Writers
-    string sDirector = string.Empty;
-    string sWriters = string.Empty;
+    // TMDB + IMDB Directors and Writers
+    List<TMDBPerson> MovieCrew = new List<TMDBPerson>();
     if (tmdbMovie.Crew != null)
     {
-      foreach (TMDBPerson apers in tmdbMovie.Crew)
-      {
-        if (!string.IsNullOrEmpty(apers.Name))
-        {
-          if (apers.As.Contains("Direct") && string.IsNullOrEmpty(sDirector))
-          {
-            // Only one Director per Movie in MP
-            sDirector = apers.Name; // + " (" + apers.As + ")";
-          }
-          else if (apers.As.Contains("Writ"))
-          {
-            sWriters += (!string.IsNullOrEmpty(sWriters) ? ", " : string.Empty) + apers.Name; // + " (" + apers.As + ")";
-          }
-        }
-      }
-      sDirector = sDirector.Replace("...", string.Empty).Trim();
-      sWriters = sWriters.Replace("...", string.Empty).Trim();
+      MovieCrew.AddRange(tmdbMovie.Crew)
     }
-
-    if (!string.IsNullOrEmpty(sDirector))
-    {
-      movie.Director = sDirector;
-    }
-    if (!string.IsNullOrEmpty(sWriters))
-    {
-      movie.WritingCredits = sWriters;
-    }
-
-    // IMDB Json Directors and Writers
-    sDirector = string.Empty;
-    sWriters = string.Empty;
     if (imdbMovie.Crew != null)
     {
-      foreach (TMDBPerson apers in imdbMovie.Crew)
+      MovieCrew.AddRange(imdbMovie.Crew)
+    }
+    MovieCrew = MovieCrew.Distinct(new TMDBPersonEqualityComparer());
+
+    // Directors and Writers
+    string sDirector = string.Empty;
+    string sWriters = string.Empty;
+    if (MovieCrew != null)
+    {
+      foreach (TMDBPerson apers in MovieCrew)
       {
         if (!string.IsNullOrEmpty(apers.Name))
         {
@@ -1471,10 +1448,14 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   #region IMDB Json
 
-  public class JsonIMDBPerson
+  public class JsonIMDBBase
   {
     [JsonProperty("@type")]
     public string type { get; set; }
+  }
+
+  public class JsonIMDBPerson : JsonIMDBBase
+  {
     public string url { get; set; }
     public string name { get; set; }
   }
@@ -1487,23 +1468,19 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       public string deathDate { get; set; }
   }    
 
-  public class JsonIMDBAggregateRating
+  public class JsonIMDBAggregateRating : JsonIMDBBase
   {
-    [JsonProperty("@type")]
-    public string type { get; set; }
     public int ratingCount { get; set; }
     public int bestRating { get; set; }
     public int worstRating { get; set; }
     public double ratingValue { get; set; }
   }
 
-  public class JsonIMDBMovie
+  public class JsonIMDBMovie : JsonIMDBBase
   {
     [JsonProperty("@context")]
     public string context { get; set; }
 
-    [JsonProperty("@type")]
-    public string type { get; set; }
     public string url { get; set; }
     public string name { get; set; }
     public string alternateName { get; set; }
@@ -1662,11 +1639,17 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       if (Movie.director  != null)
       {
-        TMDBPerson aPerson = new TMDBPerson();
-        aPerson.Id = Movie.director.url;
-        aPerson.Name = Movie.director.name;
-        aPerson.As = "Director ";
-        tReturn.Add(aPerson);
+        foreach (JsonIMDBPerson director in Movie.director)
+        {
+          if (director.type == "Person")
+          {
+            TMDBPerson aPerson = new TMDBPerson();
+            aPerson.Id = director.url;
+            aPerson.Name = director.name;
+            aPerson.As = "Director ";
+            tReturn.Add(aPerson);
+          }
+        }
       }
 
       if (tReturn.Count > 0)
@@ -2461,6 +2444,20 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     public string iso_3166_1 { get; set; }
     public bool primary { get; set; }
     public string release_date { get; set; }
+  }
+
+  class TMDBPersonEqualityComparer : IEqualityComparer<TMDBPerson>
+  {
+      public bool Equals(Item x, Item y)
+      {
+          // Two items are equal if their keys are equal.
+          return x.Name == y.Name;
+      }
+      
+      public int GetHashCode(Item obj)
+      {
+          return obj.Key.GetHashCode();
+      }
   }
 
   #endregion
