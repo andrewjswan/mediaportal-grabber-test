@@ -70,6 +70,12 @@
     <Reference Include="Utils">
       <HintPath>..\External\Utils.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.WindowsAPICodePack">
+      <HintPath>..\External\Microsoft.WindowsAPICodePack.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.WindowsAPICodePack.Shell">
+      <HintPath>..\External\Microsoft.WindowsAPICodePack.Shell.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="frmTestGrabberMP1.cs">
