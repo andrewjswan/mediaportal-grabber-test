@@ -265,7 +265,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       // TMDB
       movie.SingleGenre = tmdbMovie.Genre.Replace(" / ", ", ");
     }
-    else if (!string.IsNullOrEmpty(imdbMovie.Genre))
+    if (!string.IsNullOrEmpty(imdbMovie.Genre))
     {
       // IMDB Json
       movie.SingleGenre = imdbMovie.Genre.Replace(" / ", ", ");
@@ -277,12 +277,11 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       // TMDB
       movie.MPARating = tmdbMovie.MPARating;
     }
-    else if (!string.IsNullOrEmpty(imdbMovie.MPARating))
+    if (!string.IsNullOrEmpty(imdbMovie.MPARating))
     {
       // IMDB Json
       movie.MPARating = imdbMovie.MPARating;
     }
-
     if (string.IsNullOrEmpty(tmdbMovie.MPARating))
     {
       tmdbMovie.MPARating = "NR";
@@ -415,44 +414,45 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         return elements;
       }
 
-    string regexJson = @"type=.application\/json.>(?<json>{.+?})<";
-    string json = Regex.Match(strBody, regexJson, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
-    if (string.IsNullOrEmpty(json))
-    {
-      Log.Debug("FindIMDBActor IMDB = {0}, JSON not found.", strURL);
-      return elements;
-    }
-
-    string regexPattern = @".id.:.(?<id>nm\d{7,8})[^\}]+?displayNameText.:.(?<name>[^\}]+?)\",[^\}]+?Actor[^\}]+?knownForTitleText.:.(?<role>[^\}]+?)\",(?:[^\}]+?akaName.:.(?<aka>[^\}]+?)\",)?";
-    MatchCollection mc = Regex.Matches(json, regexPattern);
-    if (mc.Count != 0)
-    {
-      foreach (Match m in mc)
+      string regexJson = @"type=.application\/json.>(?<json>{.+?})<";
+      string json = Regex.Match(strBody, regexJson, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
+      if (string.IsNullOrEmpty(json))
       {
-        string url = HttpUtility.HtmlDecode(m.Groups["id"].Value.Trim());
-        string name = HttpUtility.HtmlDecode(m.Groups["name"].Value.Trim());
-        string role = HttpUtility.HtmlDecode(m.Groups["role"].Value.Trim());
-        string aka = HttpUtility.HtmlDecode(m.Groups["aka"].Value.Trim());
+        Log.Debug("FindIMDBActor IMDB = {0}, JSON not found.", strURL);
+        return elements;
+      }
 
-        if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name))
+      string regexPattern = @".id.:.(?<id>nm\d{7,8})[^}]+?displayNameText.:.(?<name>[^}]+?)\",[^}]+?Actor[^}]+?knownForTitleText.:.(?<role>[^}]+?)\",(?:[^}]+?akaName.:.(?<aka>[^}]+?)\",)?";
+      MatchCollection mc = Regex.Matches(json, regexPattern);
+      if (mc.Count != 0)
+      {
+        foreach (Match m in mc)
         {
-          continue;
-        }
-        url = string.Format("https://www.imdb.com/name/{0}/", url);
+          string url = HttpUtility.HtmlDecode(m.Groups["id"].Value.Trim());
+          string name = HttpUtility.HtmlDecode(m.Groups["name"].Value.Trim());
+          string role = HttpUtility.HtmlDecode(m.Groups["role"].Value.Trim());
+          string aka = HttpUtility.HtmlDecode(m.Groups["aka"].Value.Trim());
 
-        if (!string.IsNullOrEmpty(role))
-        {
-          name += " - " + role;
-        }
-        if (!string.IsNullOrEmpty(aka))
-        {
-          name += " - " + aka;
-        }
+          if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name))
+          {
+            continue;
+          }
+          url = string.Format("https://www.imdb.com/name/{0}/", url);
 
-        name = Utils.RemoveParenthesis(name).Trim();
-        IMDB.IMDBUrl newUrl = new IMDB.IMDBUrl(url, name, "IMDB");
-        elements.Add(newUrl);
-        Log.Debug("*** FindIMDBActor: {0}", url);
+          if (!string.IsNullOrEmpty(role))
+          {
+            name += " - " + role;
+          }
+          if (!string.IsNullOrEmpty(aka))
+          {
+            name += " - " + aka;
+          }
+
+          name = Utils.RemoveParenthesis(name).Trim();
+          IMDB.IMDBUrl newUrl = new IMDB.IMDBUrl(url, name, "IMDB");
+          elements.Add(newUrl);
+          Log.Debug("*** FindIMDBActor: {0}", url);
+        }
       }
     }
     catch (Exception ex)
