@@ -423,7 +423,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       return elements;
     }
 
-    string regexPattern = @".id.:.(?<id>nm\d{7,8})[^}]+?displayNameText.:.(?<name>[^}]+?)\",[^}]+?Actor[^}]+?knownForTitleText.:.(?<role>[^}]+?)\",(?:[^}]+?akaName.:.(?<aka>[^}]+?)\",)?";
+    string regexPattern = @".id.:.(?<id>nm\d{7,8})[^\}]+?displayNameText.:.(?<name>[^\}]+?)\",[^\}]+?Actor[^\}]+?knownForTitleText.:.(?<role>[^\}]+?)\",(?:[^\}]+?akaName.:.(?<aka>[^\}]+?)\",)?";
     MatchCollection mc = Regex.Matches(json, regexPattern);
     if (mc.Count != 0)
     {
