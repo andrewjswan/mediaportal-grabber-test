@@ -249,7 +249,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     {
       MovieCrew.AddRange(imdbMovie.Crew);
     }
-    MovieCrew = MovieCrew.Distinct(new TMDBPersonEqualityComparer());
+    MovieCrew = MovieCrew.Distinct(new TMDBPersonEqualityComparer()).ToList();
 
     // Directors and Writers
     string sDirector = string.Empty;
