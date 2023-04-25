@@ -1,12 +1,8 @@
 //css_reference "core.dll";
 //css_reference "Databases.dll";
 //css_reference "utils.dll";
+//css_reference "System.Core";
 //css_reference "Newtonsoft.Json.dll";
-//css_reference System.Core;
-//css_reference System.Data.ComponentModel;
-//css_reference System.Data.DataSetExtensions;
-//css_reference System.Xml;
-//css_reference System.Xml.Linq;
 
 using System;
 using System.Text;
@@ -47,7 +43,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     TMDBCoverSearch tmdbSearch = new TMDBCoverSearch();
     tmdbSearch.SearchCovers(string.Empty, imdbId);
 
-    if ((tmdbSearch.Count > 0) && (tmdbSearch[0] != string.Empty))
+    if ((tmdbSearch.Count > 0) && !string.IsNullOrEmpty(tmdbSearch[0]))
     {
       return tmdbSearch[0];
     }
@@ -57,12 +53,12 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     string uri;
     string strUrl = String.Format("https://m.imdb.com/title/{0}/", imdbId);
     string strBody = GetPage(strUrl, "utf-8", out uri);
-    string regex = @"Poster"".src=""(?<poster>.*?_V1)";
+    string regex = @"ld\+json[^}]+?image.:.(?<poster>.*?)\.jpg";
     thumb = Regex.Match(strBody, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["poster"].Value;
 
     if (!string.IsNullOrEmpty(thumb))
     {
-      thumb += "_UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + ".jpg";
+      thumb += "UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + "_.jpg";
     }
 
     return thumb;
@@ -104,7 +100,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     {
       shortPlot = string.IsNullOrEmpty(tmdbMovie.Plot) ? imdbMovie.Plot : tmdbMovie.Plot;
     }
-    movie.PlotOutline = shortPlot;
+    movie.Plot = shortPlot;
+    movie.PlotOutline = GetMiniDescription(shortPlot);
 
     // Director, Actors, Rating....
     GetExtraDataImdb(ref movie);
@@ -451,7 +448,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
           name = Utils.RemoveParenthesis(name).Trim();
           IMDB.IMDBUrl newUrl = new IMDB.IMDBUrl(url, name, "IMDB");
           elements.Add(newUrl);
-          Log.Debug("*** FindIMDBActor: {0}", url);
         }
       }
     }
@@ -505,11 +501,11 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       if (string.IsNullOrEmpty(JsonActor.ThumbnailUrl))
       {
-        regex = @"<meta property=.og:image.\scontent=.(?<image>.+?\.jpg).\/>";
+        regex = @"<meta property=.og:image.\scontent=.(?<image>.+?)\.jpg.\/>";
         string imdbImage = Regex.Match(html, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["image"].Value;
         if (!string.IsNullOrEmpty(imdbImage))
         {
-          imdbImage = Regex.Replace(imdbImage, @"(_[U|S]X\d+?_?.jpg)", "_UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + "_.jpg").Trim();
+          imdbImage += "UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + "_.jpg";
           actor.ThumbnailUrl = imdbImage;
         }
       }
@@ -715,7 +711,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
           value = Utils.stripHTMLtags(value).Trim();
           value = HttpUtility.HtmlDecode(value);
           actor.MiniBiography = GetMiniDescription(value);
-          Log.Debug("*** IMDB Mini Bio: {0}", value.Replace("\n", " "));
+          // Log.Debug("*** IMDB Mini Bio: {0}", value.Replace("\n", " "));
         }
       }
 
@@ -734,7 +730,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
           value = Utils.stripHTMLtags(value).Trim();
           value = HttpUtility.HtmlDecode(value);
           actor.Biography = value;
-          Log.Debug("*** IMDB Full Bio: {0}", value.Replace("\n", " "));
+          // Log.Debug("*** IMDB Full Bio: {0}", value.Replace("\n", " "));
         }
       }
 

@@ -258,9 +258,9 @@ namespace TestGrabberMP1
           Log.Info("--- FindIMDBActor: {0} - {1}", movie.IMDBNumber, actorList[0].ToString());
           Log.Info("----------------------------------------------------------------------");
           actorList = InternalActorsGrabber.FindIMDBActor("https://www.imdb.com/find/?s=nm&q=Bruce%20Willis");
-          foreach (string actor in actorList)
+          foreach (IMDB.IMDBUrl actor in actorList)
           {
-            Log.Info("--- {0} - {1}", "Found", actor);
+            Log.Info("--- {0} - {1} - {2}", "Found", actor.Title, actor.URL);
           }
           Log.Info("--- END --------------------------------------------------------------");
           Log.Info(string.Empty);

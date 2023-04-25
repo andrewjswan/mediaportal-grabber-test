@@ -1,7 +1,7 @@
-﻿//css_reference System.Core;
-//css_reference "core.dll";
+﻿//css_reference "core.dll";
 //css_reference "Databases.dll";
 //css_reference "utils.dll";
+//css_reference "System.Core";
 //css_reference "Newtonsoft.Json.dll";
 
 using MediaPortal.GUI.Library;
@@ -233,10 +233,11 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   public const string API_KEY = "e224fe4f3fec5f7b5570641f7cd3df3a"; // Inset API Key
   public static string API_LANG = CultureInfo.CurrentCulture.TwoLetterISOLanguageName.ToUpperInvariant();
   public static string API_LANG_URL = CultureInfo.CurrentCulture.TwoLetterISOLanguageName.ToLowerInvariant();
+  public static string API_THUMB = (((int)Thumbs.Quality < 2) ? "w342" : ((int)Thumbs.Quality < 4) ? "w500" : "w780"); 
 
   private const string API_BaseUrl = "https://api.themoviedb.org/3/";
   private const string API_ImageUrl = "https://image.tmdb.org/t/p/";
-  private const string API_PosterUrl = API_ImageUrl + "w780";
+  private static string API_PosterUrl = API_ImageUrl + API_THUMB;
   private const string API_FanartUrl = API_ImageUrl + "original";
 
   #endregion TMDB Parameters
