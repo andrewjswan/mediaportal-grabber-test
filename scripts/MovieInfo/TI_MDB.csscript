@@ -23,7 +23,7 @@ using System.Web;
 internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 {
   const string strGrabber = "TI_MDB";
-  const string strGrabberVersion = "20230424.I";
+  const string strGrabberVersion = "20230425.I";
 
   public Grabber()
   {
@@ -1917,31 +1917,39 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   #region IMDB JSON Struct
 
-  public class JsonIMDBActor
+  public class JsonIMDBBase
   {
     [JsonProperty("@type")]
     public string type { get; set; }
+  }
+
+  public class JsonIMDBPerson : JsonIMDBBase
+  {
     public string url { get; set; }
     public string name { get; set; }
   }
 
-  public class JsonIMDBAggregateRating
+  public class JsonIMDBActor : JsonIMDBPerson
   {
-    [JsonProperty("@type")]
-    public string type { get; set; }
+      public string image { get; set; }
+      public string description { get; set; }
+      public string birthDate { get; set; }
+      public string deathDate { get; set; }
+  }    
+
+  public class JsonIMDBAggregateRating : JsonIMDBBase
+  {
     public int ratingCount { get; set; }
     public int bestRating { get; set; }
     public int worstRating { get; set; }
     public double ratingValue { get; set; }
   }
 
-  public class JsonIMDBMovie
+  public class JsonIMDBMovie : JsonIMDBBase
   {
     [JsonProperty("@context")]
     public string context { get; set; }
 
-    [JsonProperty("@type")]
-    public string type { get; set; }
     public string url { get; set; }
     public string name { get; set; }
     public string alternateName { get; set; }
@@ -1952,9 +1960,9 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     public List<string> genre { get; set; }
     public string datePublished { get; set; }
     public string keywords { get; set; }
-    public List<JsonIMDBActor> actor { get; set; }
-    public List<JsonIMDBActor> director { get; set; }
-    public List<JsonIMDBActor> creator { get; set; }
+    public List<JsonIMDBPerson> actor { get; set; }
+    public List<JsonIMDBPerson> director { get; set; }
+    public List<JsonIMDBPerson> creator { get; set; }
     public string duration { get; set; }
   }
 
