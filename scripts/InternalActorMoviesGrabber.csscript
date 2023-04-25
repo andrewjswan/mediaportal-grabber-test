@@ -2448,13 +2448,13 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   class TMDBPersonEqualityComparer : IEqualityComparer<TMDBPerson>
   {
-      public bool Equals(Item x, Item y)
+      public bool Equals(TMDBPerson x, TMDBPerson y)
       {
           // Two items are equal if their keys are equal.
           return x.Name == y.Name;
       }
       
-      public int GetHashCode(Item obj)
+      public int GetHashCode(TMDBPerson obj)
       {
           return obj.Key.GetHashCode();
       }
