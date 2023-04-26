@@ -602,7 +602,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
   // Get TMDB web
   private bool GetTmdbPage(string strUrl, string strEncode, out string absoluteUri, ref string strBody)
   {
-    Log.Debug("InternalMovieImagesGrabber v{0} GetTmdbPage: {1}", strGrabberVersion, HideAPIKey(strURL));
+    Log.Debug("InternalMovieImagesGrabber v{0} GetTmdbPage: {1}", strGrabberVersion, HideAPIKey(strUrl));
 
     bool sucess = true;
     absoluteUri = String.Empty;
