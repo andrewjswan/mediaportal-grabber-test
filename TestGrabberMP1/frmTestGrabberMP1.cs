@@ -281,7 +281,7 @@ namespace TestGrabberMP1
         if (actorList.Count > 0)
         {
           Log.Info("----------------------------------------------------------------------");
-          Log.Info("--- FindIMDBActor: {0} - {1}", "Bruce Willise");
+          Log.Info("--- FindIMDBActor: {0} - {1}", "Bruce Willis");
           Log.Info("----------------------------------------------------------------------");
           actorList = InternalActorsGrabber.FindIMDBActor("https://www.imdb.com/find/?s=nm&q=Bruce%20Willis");
           foreach (IMDB.IMDBUrl actor in actorList)
@@ -372,9 +372,15 @@ namespace TestGrabberMP1
         Log.Info("--- END --------------------------------------------------------------");
         Log.Info(string.Empty);
         Log.Info("----------------------------------------------------------------------");
-        Log.Info("--- GetTmdbActorImage: {0}", "Bruce Willise");
+        Log.Info("--- GetTmdbActorImage: {0} {1}", "nm0000246", "Bruce Willis");
         Log.Info("----------------------------------------------------------------------");
-        imageList = InternalMovieImagesGrabber.GetTmdbActorImage("Bruce Willise");
+        imageList = InternalMovieImagesGrabber.GetTmdbActorImage("Bruce Willis");
+        foreach (string image in imageList)
+        {
+          Log.Info("--- {0} - {1}", "Found", image);
+        }
+        Log.Info("--- ID ---------------------------------------------------------------");
+        imageList = InternalMovieImagesGrabber.GetTmdbActorImage("nm0000246");
         foreach (string image in imageList)
         {
           Log.Info("--- {0} - {1}", "Found", image);
