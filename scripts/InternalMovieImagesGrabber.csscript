@@ -26,6 +26,8 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
 
   public ArrayList GetIMDBImages(string imdbID, bool defaultOnly)
   {
+    Log.Debug("GetIMDBImages v{0} IMDB = {1}", strGrabberVersion, imdbID);
+
     string defaultPic = string.Empty;
     ArrayList imdbImages = new ArrayList();
 
@@ -54,170 +56,183 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     }
 
     // Then get all we can from IMDB Product thumbs group for movie
-    string posterPageLinkURL = string.Format("https://www.imdb.com/title/{0}/mediaindex/", imdbID);
-    string strBodyThumbs = GetPage(posterPageLinkURL, "utf-8");
-    string regex = @"type=.application\/ld\+json.>(?<json>{.+?})<";
-    string json = Regex.Match(strBodyThumbs, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
-    if (string.IsNullOrEmpty(json))
+    string page = string.Empty;
+    while (true)
     {
-      Log.Debug("GetIMDBImages IMDB = {0}, JSON not found.", imdbID);
-      return imdbImages;
-    }
-
-    try
-    {
-      JsonIMDBImages Images = JsonConvert.DeserializeObject<JsonIMDBImages>(json);
-      if (Images == null || Images.image == null)
+      string posterPageLinkURL = string.Format("https://www.imdb.com/title/{0}/mediaindex/{1}", imdbID, page);
+      string strBodyThumbs = GetPage(posterPageLinkURL, "utf-8");
+      string regex = @"type=.application\/ld\+json.>(?<json>{.+?})<";
+      string json = Regex.Match(strBodyThumbs, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
+      if (string.IsNullOrEmpty(json))
       {
-        Log.Debug("GetIMDBImages IMDB = {0}, JSON changed!?.", imdbID);
-        return imdbImages;
-      }
-      if (Images.image.Count == 0)
-      {
-        return imdbImages;
+        Log.Debug("GetIMDBImages v{0} IMDB = {1}, JSON not found.", strGrabberVersion, imdbID);
+        break;
       }
 
-      foreach (JsonIMDBImage image in Images.image)
+      try
       {
-        if (!string.IsNullOrEmpty(image.width) && !string.IsNullOrEmpty(image.height))
+        JsonIMDBImages Images = JsonConvert.DeserializeObject<JsonIMDBImages>(json);
+        if (Images == null || Images.image == null)
         {
-          if (Int32.Parse(image.width) < Int32.Parse(image.height))
+          Log.Debug("GetIMDBImages v{0} IMDB = {1}, JSON changed!?.", strGrabberVersion, imdbID);
+          break;
+        }
+        if (Images.image.Count == 0)
+        {
+          break;
+        }
+
+        foreach (JsonIMDBImage image in Images.image)
+        {
+          if (!string.IsNullOrEmpty(image.width) && !string.IsNullOrEmpty(image.height))
           {
-            if (!string.IsNullOrEmpty(image.url))
+            if ((float)Int32.Parse(image.height) / (float)Int32.Parse(image.width) > 1.0)
             {
-              image.url = image.url.Replace("_V1_","_V1_UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + "_");
-              // No default Picture again if it's here
-              if (image.url != defaultPic)
+              if (!string.IsNullOrEmpty(image.url))
               {
-                imdbImages.Add(image.url);
+                image.url = image.url.Replace("_V1_","_V1_UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + "_");
+                // No default Picture again if it's here
+                if (image.url != defaultPic)
+                {
+                  imdbImages.Add(image.url);
+                }
               }
             }
           }
         }
       }
-    }
-    catch (Exception ex)
-    {
-      Log.Debug("GetIMDBImages IMDB = {0}, Exception {1}, JSON changed!?.", imdbID, ex.Message);
-    }
+      catch (Exception ex)
+      {
+        Log.Debug("GetIMDBImages v{0} IMDB = {1}, Exception {2}, JSON changed!?.", strGrabberVersion, imdbID, ex.Message);
+        break;
+      }
 
+      // Next page
+      string regexNext = @"href=.\/title\/" + imdbID + @"\/mediaindex(?<page>\?page=\d{1,}.*?"")[^>]+?>Next";
+      string pageNext = Regex.Match(strBodyThumbs, regexNext).Groups["page"].Value;
+      if (string.IsNullOrEmpty(pageNext))
+      {
+        break;
+      }
+      page = pageNext;
+    }
     return imdbImages;
   }
 
   public ArrayList GetIMPAwardsImages(string movieName, string imdbMovieID)
+  {
+    Log.Debug("GetIMPAwardsImages v{0} IMDB = {1}/{2}", strGrabberVersion, imdbMovieID, movieName);
+    ArrayList impAwardsImages = new ArrayList();
+
+    movieName = movieName.Replace(" ", "+");
+    string resultGoogle = string.Empty;
+    string resultImpAw = string.Empty;
+    string url = string.Format("https://www.google.com/search?as_q={0}+poster+site:www.impawards.com&tbm=isch", movieName);
+    IMPAwardsSearch x = new IMPAwardsSearch();
+    WebClient wc = new WebClient();
+
+    try
     {
-      ArrayList impAwardsImages = new ArrayList();
+      wc.Proxy.Credentials = CredentialCache.DefaultCredentials;
+      byte[] buffer = wc.DownloadData(url);
+      resultGoogle = Encoding.UTF8.GetString(buffer);
+    }
+    catch (Exception)
+    {
+      return impAwardsImages;
+    }
+    finally
+    {
+      wc.Dispose();
+    }
 
-      movieName = movieName.Replace(" ", "+");
-      string resultGoogle = string.Empty;
-      string resultImpAw = string.Empty;
-      string url = string.Format("https://www.google.com/search?as_q={0}+poster+site:www.impawards.com&tbm=isch", movieName);
-      IMPAwardsSearch x = new IMPAwardsSearch();
-      WebClient wc = new WebClient();
-
-      try
+    MatchCollection mGoogle = Regex.Matches(resultGoogle, @"www.impawards.com.(?<year>\d{4}/).*?html");
+    for (int i = 0; i < mGoogle.Count; i++)
+    {
+      
+      Match mImpAw = mGoogle[i];
+      // Check if /year/ is in link, if no that is no cover
+      string year = mImpAw.Groups["year"].Value.Replace("/", string.Empty);
+      if (!string.IsNullOrEmpty(year))
       {
-        wc.Proxy.Credentials = CredentialCache.DefaultCredentials;
-        byte[] buffer = wc.DownloadData(url);
-        resultGoogle = Encoding.UTF8.GetString(buffer);
-      }
-      catch (Exception)
-      {
-        return impAwardsImages;
-      }
-      finally
-      {
-        wc.Dispose();
-      }
-
-      MatchCollection mGoogle = Regex.Matches(resultGoogle, @"www.impawards.com.(?<year>\d{4}/).*?html");
-      for (int i = 0; i < mGoogle.Count; i++)
-      {
-        
-        Match mImpAw = mGoogle[i];
-        // Check if /year/ is in link, if no that is no cover
-        string year = mImpAw.Groups["year"].Value.Replace("/", string.Empty);
-        if (!string.IsNullOrEmpty(year))
+        string url2 = mImpAw.Value;
+        url2 = "http://" + url2;
+        try
         {
-          string url2 = mImpAw.Value;
-          url2 = "http://" + url2;
-          try
-          {
-            byte[] buffer = wc.DownloadData(url2);
-            resultImpAw = Encoding.UTF8.GetString(buffer);
-          }
-          catch (Exception)
-          {
-            return impAwardsImages;
-          }
-          finally
-          {
-            wc.Dispose();
-          }
+          byte[] buffer = wc.DownloadData(url2);
+          resultImpAw = Encoding.UTF8.GetString(buffer);
+        }
+        catch (Exception)
+        {
+          return impAwardsImages;
+        }
+        finally
+        {
+          wc.Dispose();
+        }
 
-          // Check if IMDB number on poster page is equal to  IMDB ttnumber, if not-> next link
-          Match ttcheck = Regex.Match(resultImpAw, @"tt\d{7,8}");
+        // Check if IMDB number on poster page is equal to  IMDB ttnumber, if not-> next link
+        Match ttcheck = Regex.Match(resultImpAw, @"tt\d{7,8}");
 
-          if (ttcheck.Value != imdbMovieID)
+        if (ttcheck.Value != imdbMovieID)
+        {
+          continue;
+        }
+
+        Match urlImpAw = Regex.Match(url2, @".*?\d{4}./*?");
+        // get main poster displayed on html-page
+        mImpAw = Regex.Match(resultImpAw, "posters/.*?.jpg");
+
+        if (mImpAw.Success)
+        {
+          // Check duplicate entries because Google page links can point to
+          // same cover more than once so we don't need them
+          int check = 0;
+
+          foreach (string text in impAwardsImages)
           {
-            continue;
+            if (text == urlImpAw + mImpAw.Value)
+            {
+              check = 1;
+              break;
+            }
           }
+          // No duplicates (check=0)
+          if (check == 0)
+          {
+            impAwardsImages.Add(urlImpAw + mImpAw.Value);
+          }
+          // get other posters displayed on this html-page as thumbs
+          MatchCollection mcImpAw = Regex.Matches(resultImpAw, "thumbs/imp_(?<poster>.*?.jpg)");
 
-          Match urlImpAw = Regex.Match(url2, @".*?\d{4}./*?");
-          // get main poster displayed on html-page
-          mImpAw = Regex.Match(resultImpAw, "posters/.*?.jpg");
-
-          if (mImpAw.Success)
+          foreach (Match m1 in mcImpAw)
           {
             // Check duplicate entries because Google page links can point to
             // same cover more than once so we don't need them
-            int check = 0;
+            check = 0;
 
             foreach (string text in impAwardsImages)
             {
-              if (text == urlImpAw + mImpAw.Value)
+              if (text == urlImpAw + "posters/" + m1.Groups["poster"])
               {
                 check = 1;
                 break;
               }
             }
-            // No duplicates (check=0)
+
             if (check == 0)
             {
-              impAwardsImages.Add(urlImpAw + mImpAw.Value);
-            }
-            // get other posters displayed on this html-page as thumbs
-            MatchCollection mcImpAw = Regex.Matches(resultImpAw, "thumbs/imp_(?<poster>.*?.jpg)");
-
-            foreach (Match m1 in mcImpAw)
-            {
-              // Check duplicate entries because Google page links can point to
-              // same cover more than once so we don't need them
-              check = 0;
-
-              foreach (string text in impAwardsImages)
-              {
-                if (text == urlImpAw + "posters/" + m1.Groups["poster"])
-                {
-                  check = 1;
-                  break;
-                }
-              }
-
-              if (check == 0)
-              {
-                impAwardsImages.Add(urlImpAw + "posters/" + m1.Groups["poster"].Value);
-              }
+              impAwardsImages.Add(urlImpAw + "posters/" + m1.Groups["poster"].Value);
             }
           }
         }
-
-        //mGoogle = mGoogle.NextMatch();
       }
 
-      return impAwardsImages;
+      //mGoogle = mGoogle.NextMatch();
     }
 
+    return impAwardsImages;
+  }
 
   #region TMDB
 
@@ -260,7 +275,9 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
   public ArrayList GetTmdbFanartByApi(int movieId, string imdbTT, string title, bool random, int countFA,
                                       string strSearch, out string fileFanArtDefault, out string fanartUrl)
   {
+    Log.Debug("GetTmdbFanartByApi v{0} IMDB = {1}/{2}", strGrabberVersion, imdbTT, title);
     ArrayList fanartList = new ArrayList();
+
     bool searchByString = false;
     fileFanArtDefault = string.Empty;
     fanartUrl = string.Empty;
@@ -293,7 +310,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
 
       if (!GetTmdbPage(tmdbUrl, "utf-8", out strAbsUrl, ref tmdbXml))
       {
-        Log.Info("Fanart Serach: TMDB returns no API result for - {0} ({1})", title, tmdbUrl);
+        Log.Debug("GetTmdbFanartByApi v{0}: TMDB returns no API result for: {1} ({2})", strGrabberVersion, title, tmdbUrl);
         return fanartList;
       }
 
@@ -301,8 +318,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
 
       if (!searchByString)
       {
-        tmdbXml =
-          Regex.Match(tmdbXml, @"""backdrops"":\[.*?\]", RegexOptions.IgnoreCase | RegexOptions.Singleline).Value;
+        tmdbXml = Regex.Match(tmdbXml, @"""backdrops"":\[.*?\]", RegexOptions.IgnoreCase | RegexOptions.Singleline).Value;
         matchBackdrop = @"""file_path"":""/(?<BackDrop>.*?jpg)""";
       }
       else
@@ -335,7 +351,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
         }
         else
         {
-          Log.Info("Fanart Serach: No fanart found for - {0} ({1})", title, tmdbUrl);
+          Log.Debug("GetTmdbFanartByApi v{0}: No fanart found for: {1} ({2})", strGrabberVersion, title, tmdbUrl);
           return fanartList;
         }
         // Check if fanart collection is lower than wanted fanarts quantity per movie
@@ -373,7 +389,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     }
     catch (Exception ex)
     {
-      Log.Error("GetFanart TMDB API error: {0}", ex.Message);
+      Log.Error("GetTmdbFanartByApi v{0}: Error: {1}", strGrabberVersion, ex.Message);
     }
 
     return fanartList;
@@ -392,7 +408,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     }
     catch (Exception ex)
     {
-      Log.Error("Download fanart error: {0}", ex.Message);
+      Log.Error("InternalMovieImagesGrabber v{0} DownloadFanart: Error: {0}", ex.Message);
     }
   }
 
@@ -413,7 +429,9 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
 
   public ArrayList GetTmdbCoverImages(string movieTitle, string imdbMovieID)
   {
+    Log.Debug("GetTmdbCoverImages v{0} IMDB = {1}/{2}", strGrabberVersion, imdbMovieID, movieTitle);
     ArrayList imageList = new ArrayList();
+
     string strBodyTmdb = string.Empty;
     string uri = string.Empty;
 
@@ -487,6 +505,8 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
 
   public ArrayList GetTmdbActorImage(string actorName)
   {
+    Log.Debug("GetTmdbActorImage v{0} Name = {1}", strGrabberVersion, actorName);
+
     string strXml = string.Empty;
     string uri = string.Empty;
     ArrayList actorThumbs = new ArrayList();
@@ -511,9 +531,15 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     return actorThumbs;
   }
 
+  private static string HideAPIKey(string url)
+  {
+    return url.Replace(API_KEY, "<APIKEY>");
+  }
+
   // Get HTML Page
   private string GetPage(string strURL, string strEncode)
   {
+    Log.Debug("InternalMovieImagesGrabber v{0} GetPage: {1}", strGrabberVersion, HideAPIKey(strURL));
     string strBody = "";
 
     Stream receiveStream = null;
@@ -526,21 +552,21 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
       HttpWebRequest req = (HttpWebRequest) WebRequest.Create(strURL);
       req.Headers.Add("Accept-Language", "en-US");
       req.Timeout = 20000;
-			req.ReadWriteTimeout = 20000;
+            req.ReadWriteTimeout = 20000;
       result = req.GetResponse();
       receiveStream = result.GetResponseStream();
 
       // Encoding: depends on selected page
       Encoding encode = Encoding.GetEncoding(strEncode);
-			
-			using (sr = new StreamReader(receiveStream, encode))
+            
+            using (sr = new StreamReader(receiveStream, encode))
       {
         strBody = sr.ReadToEnd();
       }
     }
     catch (Exception)
     {
-      Log.Info("IMDBCoverSearch: {0} unavailable.", strURL);
+      Log.Info("InternalMovieImagesGrabber v{0} GetPage: {0} Unavailable.", HideAPIKey(strURL));
     }
 
     finally
@@ -551,9 +577,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
         {
           sr.Close();
         }
-        catch (Exception)
-        {
-        }
+        catch (Exception) { }
       }
       if (receiveStream != null)
       {
@@ -561,9 +585,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
         {
           receiveStream.Close();
         }
-        catch (Exception)
-        {
-        }
+        catch (Exception) { }
       }
       if (result != null)
       {
@@ -571,9 +593,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
         {
           result.Close();
         }
-        catch (Exception)
-        {
-        }
+        catch (Exception) { }
       }
     }
     return strBody;
@@ -582,6 +602,8 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
   // Get TMDB web
   private bool GetTmdbPage(string strUrl, string strEncode, out string absoluteUri, ref string strBody)
   {
+    Log.Debug("InternalMovieImagesGrabber v{0} GetTmdbPage: {1}", strGrabberVersion, HideAPIKey(strURL));
+
     bool sucess = true;
     absoluteUri = String.Empty;
     Stream receiveStream = null;
@@ -594,15 +616,15 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
       req.Method = WebRequestMethods.Http.Get;
       req.Accept = "application/json";
       req.Timeout = 20000;
-			req.ReadWriteTimeout = 20000;
+      req.ReadWriteTimeout = 20000;
 
       result = req.GetResponse();
       receiveStream = result.GetResponseStream();
 
       // Encoding: depends on selected page
       Encoding encode = Encoding.GetEncoding(strEncode);
-			
-			using (sr = new StreamReader(receiveStream, encode))
+            
+      using (sr = new StreamReader(receiveStream, encode))
       {
         strBody = sr.ReadToEnd();
       }
@@ -611,6 +633,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     }
     catch (Exception)
     {
+      // Log.Debug("InternalMovieImagesGrabber v{0} GetTmdbPage: Error: {1}", strGrabberVersion, HideAPIKey(strURL));
       sucess = false;
     }
     finally
