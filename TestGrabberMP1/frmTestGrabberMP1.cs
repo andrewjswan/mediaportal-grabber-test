@@ -303,7 +303,7 @@ namespace TestGrabberMP1
           Log.Info("--- {0} - {1}", "Plot", movie.PlotOutline.Replace("\n", " "));
           Log.Info("--- {0} - {1}", "Plot", movie.Plot.Replace("\n", " "));
         }
-        catch 
+        catch (Exception ex)
         { 
           Log.Error("--- {0}", ex.Message);
         }
