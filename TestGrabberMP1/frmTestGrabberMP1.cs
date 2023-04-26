@@ -360,6 +360,14 @@ namespace TestGrabberMP1
         {
           Log.Info("--- {0} - {1}", "Found", image);
         }
+        Log.Info(string.Empty);
+        imageList = InternalMovieImagesGrabber.GetTmdbFanartByApi(-1, string.Empty, "Avatar", true, 5, string.Empty, 
+                                                                  out string _fileFanArtDefault, out string _fanartUrl);
+        Log.Info("--- {0} = {1}", _fileFanArtDefault, _fanartUrl);
+        foreach (string image in imageList)
+        {
+          Log.Info("--- {0} - {1}", "Found", image);
+        }
         Log.Info("--- END --------------------------------------------------------------");
         Log.Info(string.Empty);
         Log.Info("----------------------------------------------------------------------");
