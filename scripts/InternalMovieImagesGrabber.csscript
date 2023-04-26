@@ -288,9 +288,8 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
       }
 
       // Download fanart xml 
-      string tmdbXml = string.Empty;
-
-      if (!GetTmdbPage(tmdbUrl, "utf-8", out strAbsUrl, ref tmdbXml))
+      string tmdbJSON = string.Empty;
+      if (!GetTmdbPage(tmdbUrl, "utf-8", out strAbsUrl, ref tmdbJSON))
       {
         Log.Debug("GetTmdbFanartByApi v{0}: TMDB returns no API result for: {1} ({2})", strGrabberVersion, title, tmdbUrl);
         return fanartList;
@@ -300,7 +299,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
 
       if (!searchByString)
       {
-        tmdbXml = Regex.Match(tmdbXml, @"""backdrops"":\[.*?\]", RegexOptions.IgnoreCase | RegexOptions.Singleline).Value;
+        tmdbJSON = Regex.Match(tmdbJSON, @"""backdrops"":\[.*?\]", RegexOptions.IgnoreCase | RegexOptions.Singleline).Value;
         matchBackdrop = @"""file_path"":""/(?<BackDrop>.*?jpg)""";
       }
       else
@@ -315,7 +314,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
       // Check if FanArt directory Exists
       if (Directory.Exists(configDir))
       {
-        MatchCollection mcBd = Regex.Matches(tmdbXml, matchBackdrop);
+        MatchCollection mcBd = Regex.Matches(tmdbJSON, matchBackdrop);
         // Set fanart collection
         if (mcBd.Count != 0)
         {
