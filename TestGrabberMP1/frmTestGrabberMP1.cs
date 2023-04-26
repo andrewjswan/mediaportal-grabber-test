@@ -248,6 +248,10 @@ namespace TestGrabberMP1
         try
         {
           actorList = InternalActorsGrabber.GetIMDBMovieActorsList(movie.IMDBNumber, true);
+          foreach (string actor in actorList)
+          {
+            Log.Info("--- {0} - {1}", "Found", actor);
+          }
         }
         catch (Exception ex)
         {
