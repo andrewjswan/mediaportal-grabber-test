@@ -154,13 +154,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     // Update Title/Year
 
     // Title - TITLE_MASK {0} - Title {1} - Separator {2} - Original Title {3} - Year
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, 1);
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, (tmdbMovie.Title != null));
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, (tmdbMovie.OriginalTitle != null));
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, (tmdbMovie.Year != null));
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie.Title);
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie.OriginalTitle);
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie.Year);
     string sTitle = TITLE_MASK;
     if (!string.IsNullOrEmpty(sTitle))
     {
@@ -172,14 +165,13 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       {
         sTitle = sTitle.Replace("{1}", string.Empty).Trim();
       }
-      if (tmdbMovie.Year < 1900)
+      if (tmdbMovie.Year < 1850)
       {
         sTitle = sTitle.Replace("({3})", string.Empty).Replace("[{3])", string.Empty).Replace("{3}", string.Empty).Trim();
       }
       sTitle = string.Format(sTitle, tmdbMovie.Title, TITLE_SEPARATOR, tmdbMovie.OriginalTitle, tmdbMovie.Year);
     }
 
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, 2);
     if (!string.IsNullOrEmpty(tmdbMovie.Title) || !string.IsNullOrEmpty(tmdbMovie.OriginalTitle))
     {
       // TMDB
@@ -191,8 +183,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       movie.Title = imdbMovie.Title;
     }
 
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, 3);
-    if (tmdbMovie.Year > 0)
+    if (tmdbMovie.Year > 1850)
     {
       // TMDB
       movie.Year = tmdbMovie.Year;
@@ -203,12 +194,11 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       movie.Year = imdbMovie.Year;
     }
     // Set near future for movies without year (99% it's a future project)
-    if (movie.Year == 0)
+    if (movie.Year < 1850)
     {
       movie.Year = DateTime.Today.Year + 5;
     }
 
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, 4);
     // TMDB + IMDB Directors and Writers
     List<TMDBPerson> MovieCrew = new List<TMDBPerson>();
     if (tmdbMovie.Crew != null)
@@ -221,7 +211,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     }
     MovieCrew = MovieCrew.Distinct(new TMDBPersonEqualityComparer()).ToList();
 
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, 5);
     // Directors and Writers
     string sDirector = string.Empty;
     string sWriters = string.Empty;
@@ -246,7 +235,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       sWriters = sWriters.Replace("...", string.Empty).Trim();
     }
 
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, 6);
     if (!string.IsNullOrEmpty(sDirector))
     {
       movie.Director = sDirector;
@@ -256,7 +244,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       movie.Director = Strings.Unknown;
     }
 
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, 7);
     if (!string.IsNullOrEmpty(sWriters))
     {
       movie.WritingCredits = sWriters;
@@ -266,7 +253,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       movie.WritingCredits = Strings.Unknown;
     }
 
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, 8);
     // Genre
     if (!string.IsNullOrEmpty(tmdbMovie.Genre))
     {
@@ -279,7 +265,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       movie.SingleGenre = imdbMovie.Genre.Replace(" / ", ", ");
     }
 
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, 9);
     // MPAA Rating
     if (!string.IsNullOrEmpty(tmdbMovie.MPARating))
     {
@@ -298,7 +283,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     // Actors
 
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, 10);
     // TMDB Actors as Role
     string strActor = string.Empty;
     if (tmdbMovie.Cast != null)
@@ -324,7 +308,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       movie.Cast = strActor;
     }
 
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, 11);
     // IMDB Actors
     if (string.IsNullOrEmpty(movie.Cast))
     {
@@ -352,7 +335,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         movie.Cast = strActor;
       }
     }
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, 12);
 
     _strBody = string.Empty;
   }
@@ -1736,7 +1718,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       return oReturn;
     }
 
-    Log.Debug("InternalActorMoviesGrabber - GetTMDBDetails url = {0}, sResponseDetails = {1}", HideAPIKey(URL), json);
+    // Log.Debug("InternalActorMoviesGrabber - GetTMDBDetails url = {0}, sResponseDetails = {1}", HideAPIKey(URL), json);
     try
     {
       MovieDatails Movie = JsonConvert.DeserializeObject<MovieDatails>(json);
@@ -1831,7 +1813,10 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         oReturn.FanartURL = string.Empty;
       }
     }
-    catch { }
+    catch (Exception ex)
+    { 
+      Log.Debug("GetTMDBDetails: {0}", ex.Message);
+    }
 
     return oReturn;
   }
@@ -2130,7 +2115,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     public bool adult { get; set; }
     public string backdrop_path { get; set; }
     public Collection belongs_to_collection { get; set; }
-    public int budget { get; set; }
+    public string budget { get; set; }
     public List<Genre> genres { get; set; }
     public string homepage { get; set; }
     public int id { get; set; }
@@ -2143,7 +2128,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     public List<ProductionCompany> production_companies { get; set; }
     public List<ProductionCountry> production_countries { get; set; }
     public string release_date { get; set; }
-    public int revenue { get; set; }
+    public string revenue { get; set; }
     public int runtime { get; set; }
     public List<SpokenLanguage> spoken_languages { get; set; }
     public string status { get; set; }
