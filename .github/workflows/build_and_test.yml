@@ -49,19 +49,12 @@ jobs:
           type "C:\ProgramData\Team MediaPortal\MediaPortal\log\TestGrabberMP1.log" 
         shell: cmd
 
-      - name: 7z Grabbers
-        if: ${{ success() }}
-        run: |
-          7z a -tZip mediaportal-grabbers.zip scripts\
-        working-directory: ${{ github.workspace }}
-        shell: cmd
-
       - name: Upload Artifact / Mediaportal Grabbers
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
           name: Mediaportal Grabbers
           path: |
-            ${{ github.workspace }}\mediaportal-grabbers.zip
+            ${{ github.workspace }}\scripts
           retention-days: 10
         
