@@ -155,6 +155,13 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     // Title - TITLE_MASK {0} - Title {1} - Separator {2} - Original Title {3} - Year
     Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, 1);
+    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie != null);
+    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie.Title != null);
+    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie.OriginalTitle != null);
+    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie.Year != null);
+    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie.Title);
+    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie.OriginalTitle);
+    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie.Year);
     string sTitle = TITLE_MASK;
     if (!string.IsNullOrEmpty(sTitle))
     {
@@ -165,6 +172,10 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       if (string.IsNullOrEmpty(tmdbMovie.Title) || string.IsNullOrEmpty(tmdbMovie.OriginalTitle))
       {
         sTitle = sTitle.Replace("{1}", string.Empty).Trim();
+      }
+      if (string.IsNullOrEmpty(tmdbMovie.Year))
+      {
+        sTitle = sTitle.Replace("({3})", string.Empty).Replace("[{3])", string.Empty).Replace("{3}", string.Empty).Trim();
       }
       sTitle = string.Format(sTitle, tmdbMovie.Title, TITLE_SEPARATOR, tmdbMovie.OriginalTitle, tmdbMovie.Year);
     }
@@ -1726,7 +1737,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       return oReturn;
     }
 
-    // Log.Debug("{0} GetTMDBDetails url = {1}, sResponseDetails = {2}", strGrabber, HideAPIKey(url), json);
+    Log.Debug("{0} GetTMDBDetails url = {1}, sResponseDetails = {2}", strGrabber, HideAPIKey(url), json);
     try
     {
       MovieDatails Movie = JsonConvert.DeserializeObject<MovieDatails>(json);
