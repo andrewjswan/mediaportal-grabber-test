@@ -155,10 +155,10 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     // Title - TITLE_MASK {0} - Title {1} - Separator {2} - Original Title {3} - Year
     Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, 1);
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie != null);
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie.Title != null);
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie.OriginalTitle != null);
-    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie.Year != null);
+    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, (tmdbMovie != null));
+    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, (tmdbMovie.Title != null));
+    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, (tmdbMovie.OriginalTitle != null));
+    Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, (tmdbMovie.Year != null));
     Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie.Title);
     Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie.OriginalTitle);
     Log.Debug("*** InternalActorsGrabber - GetExtraDataImdb - Version: {0} - {1}.", strGrabberVersion, tmdbMovie.Year);
