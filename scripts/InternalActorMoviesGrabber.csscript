@@ -67,6 +67,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   public bool GetPlotImdb(ref IMDBMovie movie)
   {
+    Log.Debug("InternalActorsGrabber - GetPlotImdb - Version: {0}.", strGrabberVersion);
+
     // TMDB
     tmdbMovie = GetTMDBDetails(movie.IMDBNumber);
     GetCast(ref tmdbMovie);
@@ -75,11 +77,13 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     // IMDB
     imdbMovie = GetIMDBDetails(movie.IMDBNumber);
 
+    Log.Debug("*** InternalActorsGrabber - GetPlotImdb - Version: {0} - {1}.", strGrabberVersion, 1);
     // Plot
     string shortPlot = string.Empty;
     string fullPlot =  string.Empty;
     if (string.IsNullOrEmpty(tmdbMovie.Plot) && string.IsNullOrEmpty(imdbMovie.Plot))
     {
+      Log.Debug("*** InternalActorsGrabber - GetPlotImdb - Version: {0} - {1}.", strGrabberVersion, 2);
       // Short plot
       string strUrl = String.Format("https://m.imdb.com/title/{0}/", movie.IMDBNumber);
       string regex = @"plotText.+?plainText.:.(?<moviePlot>.+?).,.__typename";
@@ -87,6 +91,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       _strBody = string.Empty;
       shortPlot = GetPlot(strUrl, regex, ref _strBody);
 
+      Log.Debug("*** InternalActorsGrabber - GetPlotImdb - Version: {0} - {1}.", strGrabberVersion, 3);
       // Full plot
       strUrl = String.Format("https://m.imdb.com/title/{0}/plotsummary/", movie.IMDBNumber);
       regex = @"plotText.+?plainText.:.(?<moviePlot>.+?)""";
@@ -96,15 +101,19 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     }
     else
     {
+      Log.Debug("*** InternalActorsGrabber - GetPlotImdb - Version: {0} - {1}.", strGrabberVersion, 4);
       shortPlot = GetMiniDescription(string.IsNullOrEmpty(tmdbMovie.Plot) ? imdbMovie.Plot : tmdbMovie.Plot);
       fullPlot = string.IsNullOrEmpty(tmdbMovie.Plot) ? imdbMovie.Plot : tmdbMovie.Plot;
     }
+    Log.Debug("*** InternalActorsGrabber - GetPlotImdb - Version: {0} - {1}.", strGrabberVersion, 5);
     movie.Plot = shortPlot;
     movie.PlotOutline = fullPlot;
 
+    Log.Debug("*** InternalActorsGrabber - GetPlotImdb - Version: {0} - {1}.", strGrabberVersion, 6);
     // Extra Data like Director, Actors, Rating....
     GetExtraDataImdb(ref movie);
 
+    Log.Debug("*** InternalActorsGrabber - GetPlotImdb - Version: {0} - {1}.", strGrabberVersion, 7);
     return true;
   }
 
