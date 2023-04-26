@@ -353,6 +353,7 @@ namespace TestGrabberMP1
         Log.Info("----------------------------------------------------------------------");
         Log.Info("--- GetTmdbFanartByApi: {0}", movie.IMDBNumber);
         Log.Info("----------------------------------------------------------------------");
+        Log.Info("--- ID ---------------------------------------------------------------");
         imageList = InternalMovieImagesGrabber.GetTmdbFanartByApi(-1, movie.IMDBNumber, "Avatar", true, 5, string.Empty, 
                                                                   out string _fileFanArtDefault, out string _fanartUrl);
         Log.Info("--- {0} = {1}", _fileFanArtDefault, _fanartUrl);
@@ -360,10 +361,10 @@ namespace TestGrabberMP1
         {
           Log.Info("--- {0} - {1}", "Found", image);
         }
-        Log.Info(string.Empty);
+        Log.Info("--- TITLE ------------------------------------------------------------");
         imageList = InternalMovieImagesGrabber.GetTmdbFanartByApi(-1, string.Empty, "Avatar", true, 5, string.Empty, 
-                                                                  out string _fileFanArtDefault, out string _fanartUrl);
-        Log.Info("--- {0} = {1}", _fileFanArtDefault, _fanartUrl);
+                                                                  out string _fileFanArtDefaultTitle, out string _fanartUrlTitle);
+        Log.Info("--- {0} = {1}", _fileFanArtDefaultTitle, _fanartUrlTitle);
         foreach (string image in imageList)
         {
           Log.Info("--- {0} - {1}", "Found", image);
