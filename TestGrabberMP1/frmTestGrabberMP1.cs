@@ -249,8 +249,9 @@ namespace TestGrabberMP1
         {
           actorList = InternalActorsGrabber.GetIMDBMovieActorsList(movie.IMDBNumber, true);
         }
-        catch 
+        catch (Exception ex)
         {
+          Log.Info("--- {0}", ex.Message);
           Log.Info("--- ROLLBACK TO DEFAULT ----------------------------------------------");
           actorList = new ArrayList { "Bruce Willis", "nm0000246" };
         }
