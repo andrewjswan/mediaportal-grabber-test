@@ -118,7 +118,6 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       movieDetails.Rating = adetails.Rating;
       movieDetails.RunTime = adetails.RunTime;
       movieDetails.TagLine = adetails.TagLine;
-      movieDetails.Year = adetails.Year;
       movieDetails.Studios = adetails.Studios;
       movieDetails.Country = adetails.Country;
       movieDetails.Genre = adetails.Genre;
