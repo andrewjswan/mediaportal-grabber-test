@@ -28,7 +28,6 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
   {
     Log.Debug("GetIMDBImages v{0} IMDB = {1}", strGrabberVersion, imdbID);
 
-    string defaultPic = string.Empty;
     ArrayList imdbImages = new ArrayList();
 
     // First lets take default IMDB cover because maybe it is not in the IMDB Product thumbs group
@@ -44,9 +43,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
       
       if (!string.IsNullOrEmpty(posterUrl))
       {
-        // Remember default PIC, maybe it is in the Product Group so we can escape duplicate
-        defaultPic = posterUrl + "UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + "_.jpg";
-        imdbImages.Add(defaultPic);
+        imdbImages.Add(posterUrl + "UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + "_.jpg");
       }
     }
 
@@ -56,65 +53,50 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     }
 
     // Then get all we can from IMDB Product thumbs group for movie
-    string page = string.Empty;
-    while (true)
+    string posterPageLinkURL = string.Format("https://www.imdb.com/title/{0}/mediaindex/", imdbID);
+    string strBodyThumbs = GetPage(posterPageLinkURL, "utf-8");
+    string regex = @"type=.application\/ld\+json.>(?<json>{.+?})<";
+    string json = Regex.Match(strBodyThumbs, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
+    if (string.IsNullOrEmpty(json))
     {
-      string posterPageLinkURL = string.Format("https://www.imdb.com/title/{0}/mediaindex/{1}", imdbID, page);
-      string strBodyThumbs = GetPage(posterPageLinkURL, "utf-8");
-      string regex = @"type=.application\/ld\+json.>(?<json>{.+?})<";
-      string json = Regex.Match(strBodyThumbs, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
-      if (string.IsNullOrEmpty(json))
+      Log.Debug("GetIMDBImages v{0} IMDB = {1}, JSON not found.", strGrabberVersion, imdbID);
+      return imdbImages;
+    }
+
+    try
+    {
+      JsonIMDBImages Images = JsonConvert.DeserializeObject<JsonIMDBImages>(json);
+      if (Images == null || Images.image == null)
       {
-        Log.Debug("GetIMDBImages v{0} IMDB = {1}, JSON not found.", strGrabberVersion, imdbID);
-        break;
+        Log.Debug("GetIMDBImages v{0} IMDB = {1}, JSON changed!?.", strGrabberVersion, imdbID);
+        return imdbImages;
+      }
+      if (Images.image.Count == 0)
+      {
+        return imdbImages;
       }
 
-      try
+      foreach (JsonIMDBImage image in Images.image)
       {
-        JsonIMDBImages Images = JsonConvert.DeserializeObject<JsonIMDBImages>(json);
-        if (Images == null || Images.image == null)
+        if (!string.IsNullOrEmpty(image.width) && !string.IsNullOrEmpty(image.height))
         {
-          Log.Debug("GetIMDBImages v{0} IMDB = {1}, JSON changed!?.", strGrabberVersion, imdbID);
-          break;
-        }
-        if (Images.image.Count == 0)
-        {
-          break;
-        }
-
-        foreach (JsonIMDBImage image in Images.image)
-        {
-          if (!string.IsNullOrEmpty(image.width) && !string.IsNullOrEmpty(image.height))
+          if ((float)Int32.Parse(image.height) / (float)Int32.Parse(image.width) > 1.0)
           {
-            if ((float)Int32.Parse(image.height) / (float)Int32.Parse(image.width) > 1.0)
+            if (!string.IsNullOrEmpty(image.url))
             {
-              if (!string.IsNullOrEmpty(image.url))
+              image.url = image.url.Replace("_V1_","_V1_UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + "_");
+              if (!imdbImages.Contains(image.url))
               {
-                image.url = image.url.Replace("_V1_","_V1_UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution) + "_");
-                // No default Picture again if it's here
-                if (image.url != defaultPic)
-                {
-                  imdbImages.Add(image.url);
-                }
+                imdbImages.Add(image.url);
               }
             }
           }
         }
       }
-      catch (Exception ex)
-      {
-        Log.Debug("GetIMDBImages v{0} IMDB = {1}, Exception {2}, JSON changed!?.", strGrabberVersion, imdbID, ex.Message);
-        break;
-      }
-
-      // Next page
-      string regexNext = @"href=.\/title\/" + imdbID + @"\/mediaindex(?<page>\?page=\d{1,}.*?"")[^>]+?>Next";
-      string pageNext = Regex.Match(strBodyThumbs, regexNext).Groups["page"].Value;
-      if (string.IsNullOrEmpty(pageNext))
-      {
-        break;
-      }
-      page = pageNext;
+    }
+    catch (Exception ex)
+    {
+      Log.Debug("GetIMDBImages v{0} IMDB = {1}, Exception {2}, JSON changed!?.", strGrabberVersion, imdbID, ex.Message);
     }
     return imdbImages;
   }
