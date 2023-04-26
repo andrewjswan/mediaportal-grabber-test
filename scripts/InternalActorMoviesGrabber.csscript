@@ -92,7 +92,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       regex = @"plotText.+?plainText.:.(?<moviePlot>.+?)""";
 
       _strBody = string.Empty;
-      fullPlot = GetPlot(strUrl, regex, ref plotBody);
+      fullPlot = GetPlot(strUrl, regex, ref _strBody);
     }
     else
     {
@@ -2410,7 +2410,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   private static string GUILocalizeDirector()
   {
-    string Director;
+    string Director = string.Empty;
     try
     {
       Director = GUILocalizeStrings.Get(199);
@@ -2425,7 +2425,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   private static string GUILocalizeWriter()
   {
-    string Writer;
+    string Writer = string.Empty;
     try
     {
       Writer = GUILocalizeStrings.Get(200);
