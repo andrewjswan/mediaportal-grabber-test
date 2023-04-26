@@ -251,11 +251,12 @@ namespace TestGrabberMP1
         }
         catch (Exception ex)
         {
-          Log.Info("--- {0}", ex.Message);
+          Log.Error("--- {0}", ex.Message);
           Log.Info("--- ROLLBACK TO DEFAULT ----------------------------------------------");
           actorList = new ArrayList { "Bruce Willis", "nm0000246" };
         }
         Log.Info("--- END --------------------------------------------------------------");
+        Log.Info(string.Empty);
 
         int i = 0;
         foreach (string actor in actorList)
@@ -301,10 +302,13 @@ namespace TestGrabberMP1
           InternalActorsGrabber.GetPlotImdb(ref movie);
           Log.Info("--- {0} - {1}", "Plot", movie.PlotOutline.Replace("\n", " "));
           Log.Info("--- {0} - {1}", "Plot", movie.Plot.Replace("\n", " "));
-          Log.Info("--- END --------------------------------------------------------------");
-          Log.Info(string.Empty);
         }
-        catch { }
+        catch 
+        { 
+          Log.Error("--- {0}", ex.Message);
+        }
+        Log.Info("--- END --------------------------------------------------------------");
+        Log.Info(string.Empty);
 
         try
         {
@@ -312,10 +316,10 @@ namespace TestGrabberMP1
           Log.Info("--- GetThumbImdb: {0}", movie.IMDBNumber);
           Log.Info("----------------------------------------------------------------------");
           Log.Info("--- {0} - {1}", "Thumb", InternalActorsGrabber.GetThumbImdb(movie.IMDBNumber));
-          Log.Info("--- END --------------------------------------------------------------");
-          Log.Info(string.Empty);
         }
         catch { }
+        Log.Info("--- END --------------------------------------------------------------");
+        Log.Info(string.Empty);
       }
 
       if (LoadThumbScript())
