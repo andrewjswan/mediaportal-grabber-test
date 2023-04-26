@@ -75,10 +75,12 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     // IMDB
     imdbMovie = GetIMDBDetails(movie.IMDBNumber);
 
+    // Plot
     string shortPlot = string.Empty;
-
+    string fullPlot =  string.Empty;
     if (string.IsNullOrEmpty(tmdbMovie.Plot) && string.IsNullOrEmpty(imdbMovie.Plot))
     {
+      // Short plot
       string strUrl = String.Format("https://m.imdb.com/title/{0}/", movie.IMDBNumber);
       string regex = @"plotText.+?plainText.:.(?<moviePlot>.+?).,.__typename";
 
@@ -89,22 +91,18 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       strUrl = String.Format("https://m.imdb.com/title/{0}/plotsummary/", movie.IMDBNumber);
       regex = @"plotText.+?plainText.:.(?<moviePlot>.+?)""";
 
-      string plotBody = string.Empty;
-      string fullPlot = GetPlot(strUrl, regex, ref plotBody);
-
-      if (!string.IsNullOrEmpty(fullPlot))
-      {
-        fullPlot = Utils.stripHTMLtags(fullPlot).Trim();
-      }
+      _strBody = string.Empty;
+      fullPlot = GetPlot(strUrl, regex, ref plotBody);
     }
     else
     {
-      shortPlot = string.IsNullOrEmpty(tmdbMovie.Plot) ? imdbMovie.Plot : tmdbMovie.Plot;
+      shortPlot = GetMiniDescription(string.IsNullOrEmpty(tmdbMovie.Plot) ? imdbMovie.Plot : tmdbMovie.Plot);
+      fullPlot = string.IsNullOrEmpty(tmdbMovie.Plot) ? imdbMovie.Plot : tmdbMovie.Plot;
     }
     movie.Plot = shortPlot;
-    movie.PlotOutline = GetMiniDescription(shortPlot);
+    movie.PlotOutline = fullPlot;
 
-    // Director, Actors, Rating....
+    // Extra Data like Director, Actors, Rating....
     GetExtraDataImdb(ref movie);
 
     return true;
@@ -115,43 +113,36 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     string absoluteUri;
     strBody = HttpUtility.HtmlDecode(GetPage(strUrl, "utf-8", out absoluteUri));
 
-    if (strBody != null)
+    if (!string.IsNullOrEmpty(strBody))
     {
-      string shortPlot = Regex.Match(strBody, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["moviePlot"].Value.
-        Replace("&amp;", "&").
-        Replace("&lt;", "<").
-        Replace("&gt;", ">").
-        Replace("&quot;", "\"").
-        Replace("&apos;", "'").
-        Replace("No overview found.", string.Empty).Trim();
-
-      shortPlot = Utils.stripHTMLtags(shortPlot);
-
-      // extra cleanup
-      if (!string.IsNullOrEmpty(shortPlot))
+      string strPlot = Regex.Match(strBody, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["moviePlot"].Value;
+      if (!string.IsNullOrEmpty(strPlot))
       {
-        int index = shortPlot.LastIndexOf(@"See full summary");
+        strPlot = strPlot.Replace("&amp;", "&").
+                          Replace("&lt;", "<").
+                          Replace("&gt;", ">").
+                          Replace("&quot;", "\"").
+                          Replace("&apos;", "'").
+                          Replace("No overview found.", string.Empty).Trim();
+        strPlot = Utils.stripHTMLtags(strPlot);
+      }
 
+      // Extra cleanup
+      if (!string.IsNullOrEmpty(strPlot))
+      {
+        int index = strPlot.LastIndexOf(@"See full summary");
         if (index > 0)
         {
-          shortPlot = shortPlot.Remove(index);
+          strPlot = strPlot.Remove(index);
         }
 
-        index = shortPlot.LastIndexOf(@"See full synopsis");
-
+        index = strPlot.LastIndexOf(@"See full synopsis");
         if (index > 0)
         {
-          shortPlot = shortPlot.Remove(index);
-        }
-
-        index = shortPlot.LastIndexOf("\n");
-
-        if (index > 0)
-        {
-          shortPlot = shortPlot.Remove(index);
+          strPlot = strPlot.Remove(index);
         }
       }
-      return shortPlot;
+      return strPlot;
     }
     return string.Empty;
   }
@@ -935,18 +926,18 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
             // Role
             if (director)
             {
-              role = GUILocalizeStrings.Get(199).Replace(":", string.Empty);
+              role = GUILocalizeDirector().Replace(":", string.Empty);
             }
             else if (writer)
             {
               if (!string.IsNullOrEmpty(role))
               {
                 role = RemoveParenthesis(role).Trim();
-                role = GUILocalizeStrings.Get(200) + " " + role;
+                role = GUILocalizeWriter() + " " + role;
               }
               else
               {
-                role = GUILocalizeStrings.Get(200).Replace(":", string.Empty);
+                role = GUILocalizeWriter().Replace(":", string.Empty);
               }
             }
 
@@ -1103,7 +1094,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         }
       }
       // Add prefix that it's director, will be removed on fetching details
-      actorList.Add("*d" + strDirectorName + "|" + strDirectorImdbId + "|" + GUILocalizeStrings.Get(199).Replace(":", string.Empty));
+      actorList.Add("*d" + strDirectorName + "|" + strDirectorImdbId + "|" + GUILocalizeDirector().Replace(":", string.Empty));
     }
 
     // Writers
@@ -1140,7 +1131,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
           {
             if (actorList[i].ToString().Contains(writerId))
             {
-              actorList[i] = actorList[i] + ", " + GUILocalizeStrings.Get(200).Replace(":", string.Empty);
+              actorList[i] = actorList[i] + ", " + GUILocalizeWriter().Replace(":", string.Empty);
               found = true;
               break;
             }
@@ -1149,7 +1140,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
         if (!found && !string.IsNullOrEmpty(writerId))
         {
-          actorList.Add(strWriterName + "|" + writerId + "|" + GUILocalizeStrings.Get(200).Replace(":", string.Empty));
+          actorList.Add(strWriterName + "|" + writerId + "|" + GUILocalizeWriter().Replace(":", string.Empty));
         }
       }
     }
@@ -2415,6 +2406,36 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       Log.Error(e);
     }
     return keyedMatches;
+  }
+
+  private static string GUILocalizeDirector()
+  {
+    string Director;
+    try
+    {
+      Director = GUILocalizeStrings.Get(199);
+    }
+    catch { }
+    if (string.IsNullOrEmpty(Director))
+    {
+      return "Director:";
+    }
+    return Director;
+  }
+
+  private static string GUILocalizeWriter()
+  {
+    string Writer;
+    try
+    {
+      Writer = GUILocalizeStrings.Get(200);
+    }
+    catch { }
+    if (string.IsNullOrEmpty(Writer))
+    {
+      return "Writer:";
+    }
+    return Writer;
   }
 
   private static string GetMiniDescription(string text)
