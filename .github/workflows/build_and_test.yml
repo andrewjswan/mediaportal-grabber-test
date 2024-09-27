@@ -14,7 +14,7 @@ jobs:
         uses: microsoft/setup-msbuild@v1.3
         with:
           vs-version: 16.11
-       
+
       - name: Git Checkout
         uses: actions/checkout@v3
 
@@ -22,31 +22,31 @@ jobs:
         run: |
           msbuild TestGrabberMP1.sln -t:rebuild -property:Configuration=Release
         shell: cmd
-        
-      - name: Prepare environment 
+
+      - name: Prepare environment
         run: |
           mkdir "C:\ProgramData\Team MediaPortal\MediaPortal\Database\"
           mkdir "C:\ProgramData\Team MediaPortal\MediaPortal\thumbs\Videos\Collection\"
           mkdir "C:\ProgramData\Team MediaPortal\MediaPortal\thumbs\Skin FanArt\Scraper\Movies\"
-          
+
           xcopy Log4Net.config "C:\ProgramData\Team MediaPortal\MediaPortal\" /Y
           xcopy strings_en.xml "C:\ProgramData\Team MediaPortal\MediaPortal\Language\" /Y
           xcopy sqlite.dll ${{ github.workspace }}\TestGrabberMP1\bin\Release\ /Y
           xcopy ..\scripts\InternalMovieImagesGrabber.csscript "C:\ProgramData\Team MediaPortal\MediaPortal\scripts\" /Y
-          
+
           del c:\Windows\Microsoft.NET\assembly\GAC_MSIL\Newtonsoft.Json\v4.0_12.0.0.0__30ad4fe6b2a6aeed\Newtonsoft.Json.dll /F
         working-directory: ${{ github.workspace }}\External
         shell: cmd
-        
+
       - name: Run Tests
         run: |
           TestGrabberMP1.exe auto
         working-directory: ${{ github.workspace }}\TestGrabberMP1\bin\Release
         shell: cmd
-        
+
       - name: Show Result
         run: |
-          type "C:\ProgramData\Team MediaPortal\MediaPortal\log\TestGrabberMP1.log" 
+          type "C:\ProgramData\Team MediaPortal\MediaPortal\log\TestGrabberMP1.log"
         shell: cmd
 
       - name: Upload Artifact / Mediaportal Grabbers
@@ -57,4 +57,4 @@ jobs:
           path: |
             ${{ github.workspace }}\scripts
           retention-days: 10
-        
+
