@@ -7,14 +7,9 @@ on:
 jobs:
   build:
 
-    runs-on: windows-2019
+    runs-on: windows-2022
 
     steps:
-      - name: Setup Visual Studio 2019
-        uses: microsoft/setup-msbuild@v1.3
-        with:
-          vs-version: 16.11
-
       - name: Git Checkout
         uses: actions/checkout@v3
 
