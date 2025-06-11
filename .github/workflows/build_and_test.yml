@@ -2,7 +2,7 @@ name: MP Grabber / Test
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   build:
