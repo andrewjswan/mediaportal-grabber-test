@@ -31,8 +31,6 @@ jobs:
           xcopy strings_en.xml "C:\ProgramData\Team MediaPortal\MediaPortal\Language\" /Y
           xcopy sqlite.dll ${{ github.workspace }}\TestGrabberMP1\bin\Release\ /Y
           xcopy ..\scripts\InternalMovieImagesGrabber.csscript "C:\ProgramData\Team MediaPortal\MediaPortal\scripts\" /Y
-
-          del c:\Windows\Microsoft.NET\assembly\GAC_MSIL\Newtonsoft.Json\v4.0_12.0.0.0__30ad4fe6b2a6aeed\Newtonsoft.Json.dll /F
         working-directory: ${{ github.workspace }}\External
         shell: cmd
 
