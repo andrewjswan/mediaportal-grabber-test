@@ -2788,10 +2788,9 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     try
     {
-      Task<Tuple<string, string>> downloadTask = DownloadWebPage(strUrl);
-      downloadTask.Wait();
-      absoluteUri = downloadTask.Result.Item1;
-      strBody = downloadTask.Result.Item2;
+      Tuple<string, string> result = Task.Run(() => DownloadWebPage(strUrl)).Result;
+      absoluteUri = result.Item1;
+      strBody = result.Item2;
     }
     catch (Exception ex)
     {
