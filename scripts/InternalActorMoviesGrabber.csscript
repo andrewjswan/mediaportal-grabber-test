@@ -2728,31 +2728,31 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     IMDBPageCache = new Hashtable();
   }
 
-  // Setup the HttpClient
-  private static readonly HttpClient httpClient = new HttpClient();
-          
   private static async Task<string> DownloadWebPage(string URL, out string absoluteUri)
   {
     try
     {      
-      // Proxy
-      httpClient.DefaultProxy.Credentials = CredentialCache.DefaultCredentials;
-
-      // Set Headers
-      httpClient.DefaultRequestHeaders.Clear();
-      httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36");
-      httpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.5");
-
-      // Get the webpage asynchronously
-      HttpResponseMessage response = await httpClient.GetAsync(URL);
-
-      // If we get a 200 response, then return it
-      if (response.IsSuccessStatusCode)
+      using (HttpClientHandler handler = new HttpClientHandler() { DefaultProxyCredentials = CredentialCache.DefaultCredentials })
       {
-        // Get the webpage as string
-        string strBody = await response.Content.ReadAsStringAsync();
-        absoluteUri = response.RequestMessage.RequestUri.AbsoluteUri;
-        return strBody;
+        // Setup the HttpClient
+        using (HttpClient httpClient = new HttpClient())
+        {
+          // Set Headers
+          httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36");
+          httpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.5");
+
+          // Get the webpage asynchronously
+          HttpResponseMessage response = await httpClient.GetAsync(URL);
+
+          // If we get a 200 response, then return it
+          if (response.IsSuccessStatusCode)
+          {
+            // Get the webpage as string
+            string strBody = await response.Content.ReadAsStringAsync();
+            absoluteUri = response.RequestMessage.RequestUri.AbsoluteUri;
+            return strBody;
+          }
+        }
       }
     }
     catch (HttpRequestException e)
