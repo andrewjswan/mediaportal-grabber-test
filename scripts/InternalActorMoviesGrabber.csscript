@@ -2755,7 +2755,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         }
       }
     }
-    catch (HttpRequestException e)
+    catch (HttpRequestException ex)
     {
       Log.Error("InternalActorsScriptGrabber - DownloadWebPage: Error retrieving WebPage: {0} err:{1}", URL, ex.Message);
     }                       
