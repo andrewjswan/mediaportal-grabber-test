@@ -1259,160 +1259,66 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       return GetTMDBMovieActorsList (imdbMovieID, shortActorsList);
     }
 
-    // Director
-    string strDirectorImdbId = string.Empty;
-    string strDirectorName = string.Empty;
-    string regexBlockPattern = @"Director:(?<directors_block>.*?)<\/div";
-    string regexPattern = @"href=.\/name\/(?<idDirector>nm\d{7,8}).>(?<movieDirectors>[^<]+)<\/a>";
-    string regexBlock = Regex.Match(HttpUtility.HtmlDecode(strBodyActors), regexBlockPattern, RegexOptions.Singleline).Groups["directors_block"].Value;
-    
-    strDirectorImdbId = Regex.Match(regexBlock, regexPattern, RegexOptions.Singleline).Groups["idDirector"].Value;
-    strDirectorName = Regex.Match(regexBlock, regexPattern, RegexOptions.Singleline).Groups["movieDirectors"].Value;
-
-    if (strDirectorImdbId != string.Empty)
+    string regex = @"type=.application\/ld\+json.>(?<json>{.+?})<";
+    string json = Regex.Match(strBodyActors, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
+    if (string.IsNullOrEmpty(json))
     {
-      if (CanTranslate())
-      {
-        string strTMDBDirectorName = TMDBPersonName(strDirectorImdbId);
-        if (!string.IsNullOrEmpty(strTMDBDirectorName))
-        {
-          strDirectorName = strTMDBDirectorName;
-        }
-      }
-      // Add prefix that it's director, will be removed on fetching details
-      actorList.Add("*d" + strDirectorName + "|" + strDirectorImdbId + "|" + GUILocalizeDirector().Replace(":", string.Empty));
+      Log.Debug("GetIMDBMovieActorsList IMDB = {0}, JSON not found. Fallback to TMDB", imdbMovieID);
+      return GetTMDBMovieActorsList (imdbMovieID, shortActorsList);
     }
 
-    // Writers
-    regexBlockPattern = @"Writers:(?<writers_block>.*?)<\/div";
-    regexPattern = @"href=.\/name\/(?<imdbWriterId>nm\d{7,8}).>(?<writer>[^<]+)<\/a>";
-    regexBlock = Regex.Match(HttpUtility.HtmlDecode(strBodyActors), regexBlockPattern, RegexOptions.Singleline).Groups["writers_block"].Value;
-
-    MatchCollection mc = Regex.Matches(regexBlock, regexPattern);
-
-    if (mc.Count != 0)
+    try
     {
-      foreach (Match m in mc)
+      JsonIMDBCasts Casts = JsonConvert.DeserializeObject<JsonIMDBCasts>(json);
+      if (Casts == null || Casts.props == null || Casts.props.pageProps == null || Casts.props.pageProps.mainColumnData == null)
       {
-        string writerId = string.Empty;
-        writerId = HttpUtility.HtmlDecode(m.Groups["imdbWriterId"].Value.Trim());
+        Log.Debug("GetIMDBMovieActorsList IMDB = {0}, JSON changed!?.", imdbMovieID);
+        return actorList;
+      }
 
-        string strWriterName = string.Empty;
-        strWriterName = HttpUtility.HtmlDecode(m.Groups["writer"].Value.Trim());
+      JsonIMDBCastMainColumnData Data = Casts.props.pageProps.mainColumnData;
+      if (Data.titleText != null && Data.titleText.text != null)
+      {
+        Log.Debug("GetIMDBMovieActorsList for IMDB {0}: {1}", "Title", Data.titleText.text);
+      }
 
-        if (CanTranslate())
+      foreach (JsonIMDBCastCreditCategory categories in Data.creditCategories)
+      {
+        foreach (JsonIMDBCastEdge edge in categories.credits.edges)
         {
-          string strTMDBWriterName = TMDBPersonName(writerId);
-          if (!string.IsNullOrEmpty(strTMDBWriterName))
+          if (categories.category.id == "director")
           {
-            strWriterName = strTMDBWriterName;
+            // Add prefix that it's director, will be removed on fetching details
+            actorList.Add("*d" + edge.node.name.nameText.text + "|" + edge.node.name.id + "|" + GUILocalizeDirector().Replace(":", string.Empty));
+          }
+          if (categories.category.id == "writer")
+          {
+            actorList.Add(edge.node.name.nameText.text + "|" + edge.node.name.id + "|" + GUILocalizeWriter().Replace(":", string.Empty));
           }
         }
+      }
 
-        bool found = false;
-
-        for (int i = 0; i < actorList.Count; i++)
+      int actorsCount = 0;
+      foreach (JsonIMDBCastCreditCategory categories in Data.creditCategories)
+      {
+        foreach (JsonIMDBCastEdge edge in categories.credits.edges)
         {
-          if (!string.IsNullOrEmpty(writerId))
+          if (categories.category.id == "cast")
           {
-            if (actorList[i].ToString().Contains(writerId))
+            actorList.Add(edge.node.name.nameText.text + "|" + edge.node.name.id + "|" + edge.node.characters[0].name);
+
+            actorsCount++;
+            if (shortActorsList && actorsCount >= 15)
             {
-              actorList[i] = actorList[i] + ", " + GUILocalizeWriter().Replace(":", string.Empty);
-              found = true;
               break;
             }
           }
         }
-
-        if (!found && !string.IsNullOrEmpty(writerId))
-        {
-          actorList.Add(strWriterName + "|" + writerId + "|" + GUILocalizeWriter().Replace(":", string.Empty));
-        }
       }
     }
-
-    // Cast
-    regexBlockPattern = @"<table class=.cast(?:_list)?.>.*?<\/table>";
-    regexPattern = @"<td[^<]*itemprop=""actor""[^<]*<a\s+href=""\/name\/(?<imdbActorID>nm\d{7,8})\/[^>]*>[^<]*?<span[^>]*?>(?<actor>[^<]*)<\/span>.*?<td.class=""character"">(?<role>.*?)<*?<\/td>";
-    Match castBlock = Regex.Match(strBodyActors, regexBlockPattern, RegexOptions.Singleline);
-    string strCastBlock = HttpUtility.HtmlDecode(castBlock.Value);
-
-    if (strCastBlock != null)
+    catch (Exception ex)
     {
-      mc = Regex.Matches(strCastBlock, regexPattern, RegexOptions.Singleline);
-
-      if (mc.Count != 0)
-      {
-        int actorsCount = 0;
-
-        foreach (Match m in mc)
-        {
-          string strActorID = string.Empty;
-          strActorID = m.Groups["imdbActorID"].Value;
-          strActorID = Utils.stripHTMLtags(strActorID).Trim();
-
-          string strActorName = string.Empty;
-          strActorName = m.Groups["actor"].Value;
-          strActorName = Utils.stripHTMLtags(strActorName).Trim();
-
-          if (CanTranslate())
-          {
-            string strTMDBActorName = TMDBPersonName(strActorID);
-            if (!string.IsNullOrEmpty(strTMDBActorName))
-            {
-              strActorName = strTMDBActorName;
-            }
-          }
-
-          string strRole = string.Empty;
-          strRole = m.Groups["role"].Value;
-          strRole = HttpUtility.HtmlDecode(strRole);
-          strRole = Utils.stripHTMLtags(strRole).Trim().Replace("\n", string.Empty);
-          strRole = strRole.Replace(",", ";").Replace("  ", string.Empty);
-
-          if (!strRole.StartsWith("("))
-          {
-            string regex = "(\\(.*\\))";
-            strRole = Regex.Replace(strRole, regex, string.Empty).Trim();
-          }
-          else
-          {
-            string regex = "(\\(as.*\\))";
-            strRole = Regex.Replace(strRole, regex, string.Empty).Trim().
-                            Replace("(", string.Empty).
-                            Replace(")", string.Empty);
-          }
-
-          // Check if we have allready actor as director (actor also is director for movie)
-          bool found = false;
-
-          for (int i = 0; i < actorList.Count; i++)
-          {
-            if (actorList[i].ToString().Contains(strActorID))
-            {
-              if (!string.IsNullOrEmpty(strRole))
-              {
-                actorList[i] = actorList[i] + ", " + strRole;
-              }
-
-              found = true;
-              break;
-            }
-          }
-
-          if (!found && !string.IsNullOrEmpty(strActorID))
-          {
-            actorList.Add(strActorName + "|" + strActorID + "|" + strRole);
-          }
-
-          actorsCount++;
-
-          if (shortActorsList && actorsCount >= 15)
-          {
-            break;
-          }
-        }
-      }
+      Log.Debug("GetIMDBMovieActorsList IMDB = {0}, Exception {1}, JSON changed!?.", imdbMovieID, ex.Message);
     }
 
     if (actorList.Count == 0)
@@ -1593,6 +1499,111 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     public string text { get; set; }
     public string subText { get; set; }
     public string href { get; set; }
+  }
+
+  // IMDB Casts
+  public class JsonIMDBCasts
+  {
+    public JsonIMDBCastProps props { get; set; }
+  }
+
+  public class JsonIMDBCastProps
+  {
+    public JsonIMDBCastPageProps pageProps { get; set; }
+  }
+
+  public class JsonIMDBCastPageProps
+  {
+    public string tconst { get; set; }
+    public JsonIMDBCastMainColumnData mainColumnData { get; set; }
+  }
+  
+  public class JsonIMDBCastMainColumnData
+  {
+    public string id { get; set; }
+    public JsonIMDBCastText titleText { get; set; }
+    public JsonIMDBCastText originalTitleText { get; set; }
+    public JsonIMDBCastPlot plot { get; set; }
+    public JsonIMDBCastReleaseDate releaseDate { get; set; }
+    public List<JsonIMDBCastCreditCategory> creditCategories { get; set; }
+    public JsonIMDBCastTaglines taglines { get; set; }
+  }
+
+  public class JsonIMDBCastText
+  {
+    public string text { get; set; }
+  }
+  
+  public class JsonIMDBCastPlotText
+  {
+    public string plainText { get; set; }
+  }
+
+  public class JsonIMDBCastPlot
+  {
+    public JsonIMDBCastPlotText plotText { get; set; }
+  }
+
+  public class JsonIMDBCastReleaseDate
+  {
+    public int day { get; set; }
+    public int month { get; set; }
+    public int year { get; set; }
+    public JsonIMDBCastText country { get; set; }
+  }
+  
+  public class JsonIMDBCastTaglines
+  {
+    public List<JsonIMDBCastEdge> edges { get; set; }
+    public int total { get; set; }
+  }
+
+ 
+  public class JsonIMDBCastCreditCategory
+  {
+    public JsonIMDBCastCategory category { get; set; }
+    public JsonIMDBCastCredits credits { get; set; }
+  }
+
+  public class JsonIMDBCastCategory
+  {
+    public string id { get; set; }
+  }
+
+
+  public class JsonIMDBCastCredits
+  {
+    public int total { get; set; }
+    public List<JsonIMDBCastEdge> edges { get; set; }
+  }
+
+  public class JsonIMDBCastEdge
+  {
+    public JsonIMDBCastNode node { get; set; }
+  }
+
+  public class JsonIMDBCastNode
+  {
+    public JsonIMDBCastName name { get; set; }
+    public List<JsonIMDBCastCharacter> characters { get; set; }
+    public string text { get; set; }
+  }
+
+  public class JsonIMDBCastName
+  {
+    public string id { get; set; }
+    public JsonIMDBCastText nameText { get; set; }
+    public JsonIMDBCastPrimaryImage primaryImage { get; set; }
+  }
+
+  public class JsonIMDBCastPrimaryImage
+  {
+    public string url { get; set; }
+  }
+
+  public class JsonIMDBCastCharacter
+  {
+    public string name { get; set; }
   }
 
   public IMDBActor GetIMDBActorDetails(string imdbID, string page)

@@ -45,6 +45,7 @@ namespace TestGrabberMP1
     /// </summary>
     private void InitializeComponent()
     {
+      System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmTestGrabberMP1));
       this.button1 = new System.Windows.Forms.Button();
       this.textBox1 = new System.Windows.Forms.TextBox();
       this.SuspendLayout();
@@ -66,15 +67,16 @@ namespace TestGrabberMP1
       this.textBox1.Size = new System.Drawing.Size(1009, 265);
       this.textBox1.TabIndex = 1;
       // 
-      // frmTestGrabberMP1
+      // FrmTestGrabberMP1
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
       this.ClientSize = new System.Drawing.Size(1033, 315);
       this.Controls.Add(this.textBox1);
       this.Controls.Add(this.button1);
-      this.Name = "frmTestGrabberMP1";
-      this.Text = "TestGrabberMP1";
+      this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+      this.Name = "FrmTestGrabberMP1";
+      this.Text = "Test | Grabbers MP1";
       this.ResumeLayout(false);
       this.PerformLayout();
 
@@ -401,7 +403,9 @@ namespace TestGrabberMP1
 
     void Button1_Click(object sender, EventArgs e)
     {
+      button1.Enabled = false;
       RunGrabber();
+      button1.Enabled = true;
       if (autoStart)
       {
         System.Environment.Exit(0);
