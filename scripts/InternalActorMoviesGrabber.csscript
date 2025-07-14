@@ -2760,13 +2760,15 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     }
     catch (Exception ex)
     {
-      Log.Error("InternalActorsScriptGrabber - DownloadWebPage: Error retrieving WebPage: {0} err:{1}", URL, ex.Message);
+      Log.Error("InternalActorsScriptGrabber - DownloadWebPage: Error retrieving WebPage: {0} err:{1}", HideAPIKey(URL), ex.Message);
     }                       
     return new Tuple<string, string>(string.Empty, string.Empty);
   }
 
   private string GetPage(string strUrl, string strEncode, out string absoluteUri, bool cache = false)
   {
+    Log.Debug("InternalActorsScriptGrabber - GetPage: {0}", HideAPIKey(strUrl));
+
     string strBody = string.Empty;
     absoluteUri = string.Empty;
 
@@ -2779,7 +2781,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       if (IMDBPageCache.Contains(strUrl))
       {
-        Log.Debug("InternalActorsScriptGrabber - GetPage from Cache: {0}", strUrl);
+        Log.Debug("InternalActorsScriptGrabber - GetPage from Cache: {0}", HideAPIKey(strUrl));
         return (string)IMDBPageCache[strUrl];
       }
     }
@@ -2793,18 +2795,18 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     }
     catch (Exception ex)
     {
-      Log.Error("InternalActorsScriptGrabber - GetPage: Exception for WebPage: {0} err:{1}", strUrl, ex.Message);
+      Log.Error("InternalActorsScriptGrabber - GetPage: Exception for WebPage: {0} err:{1}", HideAPIKey(strUrl), ex.Message);
     }
 
     strBody = strBody.Trim();
     if (string.IsNullOrEmpty(strBody))
     {
-      Log.Debug("InternalActorsScriptGrabber - GetPage empty response for: {0}", strUrl);
+      Log.Debug("InternalActorsScriptGrabber - GetPage empty response for: {0}", HideAPIKey(strUrl));
     }
 
     if (cache && !string.IsNullOrEmpty(strBody))
     {
-      Log.Debug("InternalActorsScriptGrabber - GetPage put Page to Cache: {0}", strUrl);
+      Log.Debug("InternalActorsScriptGrabber - GetPage put Page to Cache: {0}", HideAPIKey(strUrl));
       IMDBPageCache.Add(strUrl, strBody);
     }
     return strBody;
