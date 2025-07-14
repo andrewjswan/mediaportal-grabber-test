@@ -2759,7 +2759,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     {
       Log.Error("InternalActorsScriptGrabber - DownloadWebPage: Error retrieving WebPage: {0} err:{1}", URL, ex.Message);
     }                       
-    return string.Empty; 
+    return new Tuple<string, string>(string.Empty, string.Empty);
   }
 
   private string GetPage(string strUrl, string strEncode, out string absoluteUri, bool cache = false)
