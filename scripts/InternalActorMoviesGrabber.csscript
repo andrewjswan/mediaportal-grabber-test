@@ -1240,6 +1240,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       }
     }
 
+    Log.Debug("InternalActorsGrabber - GetTMDBMovieActorsList - Actors found: {0}.", actorList.Count);
     return actorList;
   }
 
@@ -1413,6 +1414,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         }
       }
     }
+    Log.Debug("InternalActorsGrabber - GetIMDBMovieActorsList - Actors found: {0}.", actorList.Count);
     return actorList;
   }
 
