@@ -2737,6 +2737,9 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         // Setup the HttpClient
         using (HttpClient httpClient = new HttpClient())
         {
+          // Timeout
+          httpClient.Timeout = TimeSpan.FromSeconds(20);
+
           // Set Headers
           httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36");
           httpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.5");
@@ -2755,7 +2758,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         }
       }
     }
-    catch (HttpRequestException ex)
+    catch (Exception ex)
     {
       Log.Error("InternalActorsScriptGrabber - DownloadWebPage: Error retrieving WebPage: {0} err:{1}", URL, ex.Message);
     }                       
