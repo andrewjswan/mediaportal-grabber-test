@@ -9,12 +9,14 @@ using System;
 using System.Text;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Web;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 using MediaPortal.GUI.Library;
 using MediaPortal.Util;
@@ -41,6 +43,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   public string GetThumbImdb(string imdbId)
   {
+    Log.Debug("InternalActorsGrabber - GetThumbImdb - Version: {0}.", strGrabberVersion);
+
     TMDBCoverSearch tmdbSearch = new TMDBCoverSearch();
     tmdbSearch.SearchCovers(string.Empty, imdbId);
 
@@ -112,6 +116,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   private string GetPlot(string strUrl, string regex, ref string strBody)
   {
+    Log.Debug("InternalActorsGrabber - GetPlot - Version: {0}.", strGrabberVersion);
+
     string absoluteUri;
     strBody = HttpUtility.HtmlDecode(GetPage(strUrl, "utf-8", out absoluteUri));
 
@@ -1174,6 +1180,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   public ArrayList GetTMDBMovieActorsList(string imdbMovieID, bool shortActorsList)
   {
+    Log.Debug("InternalActorsGrabber - GetTMDBMovieActorsList - Version: {0}.", strGrabberVersion);
+
     ArrayList actorList = new ArrayList();
     TMDBMovie tMovie = new TMDBMovie();
     tMovie.IMDBNumber = imdbMovieID; 
@@ -1237,6 +1245,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   public ArrayList GetIMDBMovieActorsList(string imdbMovieID, bool shortActorsList)
   {
+    Log.Debug("InternalActorsGrabber - GetIMDBMovieActorsList - Version: {0}.", strGrabberVersion);
+
     ArrayList actorList = new ArrayList();
 
     string absUri = string.Empty;
@@ -1579,6 +1589,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   public IMDBActor GetIMDBActorDetails(string imdbID, string page)
   {
+    Log.Debug("InternalActorsGrabber - GetIMDBActorDetails - Version: {0}.", strGrabberVersion);
+
     IMDBActor oReturn = new IMDBActor();
 
     if (string.IsNullOrEmpty(page))
@@ -1625,6 +1637,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   public TMDBMovie GetIMDBDetails(string imdbID)
   {
+    Log.Debug("InternalActorsGrabber - GetIMDBDetails - Version: {0}.", strGrabberVersion);
+
     TMDBMovie oReturn = new TMDBMovie();
 
     if (string.IsNullOrEmpty(_strBody))
@@ -1915,6 +1929,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   public TMDBMovie GetTMDBDetails(string imdbID)
   {
+    Log.Debug("InternalActorsGrabber - GetTMDBDetails - Version: {0}.", strGrabberVersion);
+
     TMDBMovie oReturn = new TMDBMovie();
 
     if (string.IsNullOrEmpty(imdbID))
@@ -2050,6 +2066,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   public bool TMDBGetActorDetails(string imdbID, out IMDBActor actor)
   {
+    Log.Debug("InternalActorsGrabber - TMDBGetActorDetails - Version: {0}.", strGrabberVersion);
+
     actor = new IMDBActor();
     if (string.IsNullOrEmpty(imdbID))
     {
@@ -2710,13 +2728,44 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     IMDBPageCache = new Hashtable();
   }
 
+  // Setup the HttpClient
+  private static readonly HttpClient httpClient = new HttpClient();
+          
+  private static async Task<string> DownloadWebPage(string URL, out absoluteUri)
+  {
+    try
+    {      
+      // Proxy
+      httpClient.DefaultProxy.Credentials = CredentialCache.DefaultCredentials;
+
+      // Set Headers
+      httpClient.DefaultRequestHeaders.Clear();
+      httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36");
+      httpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.5");
+
+      // Get the webpage asynchronously
+      HttpResponseMessage response = await httpClient.GetAsync(URL);
+
+      // If we get a 200 response, then return it
+      if (response.IsSuccessStatusCode)
+      {
+        // Get the webpage as string
+        string strBody = await response.Content.ReadAsStringAsync();
+        absoluteUri = response.RequestMessage.RequestUri.AbsoluteUri;
+        return strBody;
+      }
+    }
+    catch (HttpRequestException e)
+    {
+      Log.Error("InternalActorsScriptGrabber - DownloadWebPage: Error retrieving WebPage: {0} err:{1}", URL, ex.Message);
+    }                       
+    return string.Empty; 
+  }
+
   private string GetPage(string strUrl, string strEncode, out string absoluteUri, bool cache = false)
   {
     string strBody = string.Empty;
     absoluteUri = string.Empty;
-    Stream receiveStream = null;
-    StreamReader sr = null;
-    WebResponse result = null;
 
     if (cache)
     {
@@ -2727,74 +2776,31 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       if (IMDBPageCache.Contains(strUrl))
       {
-        Log.Debug("InternalActorsScriptGrabber - GetPage from cache: {0}", strUrl);
+        Log.Debug("InternalActorsScriptGrabber - GetPage from Cache: {0}", strUrl);
         return (string)IMDBPageCache[strUrl];
       }
     }
 
     try
     {
-      // Make the Webrequest
-      HttpWebRequest req = (HttpWebRequest)WebRequest.Create(strUrl);
-
-      try
-      {
-        string uu = "BCYmcFe4PTBQ8nEoIcCgT5AJwPk7BAOCg5XsQrvqKyvxEUpEB6KqjE0Uv_pqnPChVCCnD8vgTK3UtK7FGCdw39E2j-Fb5MWegRLgbNA2rFWeYUJbbXhRyUaxqGuuW3AZb1grBhmGMxhDJyH5ntFDj1X1Ejh_jqR6BaQUk6P16AN1EMPstTSBIqxVW08QEqMKQgsK75y8_s1Ss9tyDfZpLZzCWhO5qftGUn3_bbw_DBF6sTZDo6xK-zy88VZ8cws-D30P";
-        string id = "BCYobsJMWRwG55i2yGvVuZe7v5twryi7KSxLglDHw2wVcI1rMq0OjHVT7duPo5NNHKDDVFBTVjJM4PoMonlTB_q9NvMCs-wB78Y1hGjdgCLX0SEEC2Y6BD4E3Z6cIoMwlhTDFSprYlxMqjEsFGYwWzVp1oIUYkZQ0kgpX_MvBrEh-fU";
-        string cookieHeader = string.Format("uu={0}; id={1}", uu, id);
-        req.Headers.Add("Cookie", cookieHeader);
-        req.Headers.Add("Accept-Language", "en-US,en;q=0.5");
-        req.Proxy.Credentials = CredentialCache.DefaultCredentials;
-        req.Timeout = 20000;
-        req.ReadWriteTimeout = 20000;
-      }
-      catch (Exception) { }
-      result = req.GetResponse();
-      receiveStream = result.GetResponseStream();
-
-      // Encoding: depends on selected page
-      Encoding encode = Encoding.GetEncoding(strEncode);
-      using (sr = new StreamReader(receiveStream, encode))
-      {
-        strBody = sr.ReadToEnd();
-      }
-
-      absoluteUri = result.ResponseUri.AbsoluteUri;
+      Task<string> downloadTask = DownloadWebPage(URL);
+      downloadTask.Wait();
+      strBody = downloadTask.Result;
     }
     catch (Exception ex)
     {
-      Log.Error("InternalActorsScriptGrabber - GetPage: Error retrieving WebPage: {0} err:{1}", strUrl, ex.Message);
+      Log.Error("InternalActorsScriptGrabber - GetPage: Exception for WebPage: {0} err:{1}", strUrl, ex.Message);
     }
-    finally
+
+    strBody = strBody.Trim();
+    if (string.IsNullOrEmpty(strBody))
     {
-      if (sr != null)
-      {
-        try
-        {
-          sr.Close();
-        }
-        catch (Exception) { }
-      }
-      if (receiveStream != null)
-      {
-        try
-        {
-          receiveStream.Close();
-        }
-        catch (Exception) { }
-      }
-      if (result != null)
-      {
-        try
-        {
-          result.Close();
-        }
-        catch (Exception) { }
-      }
+      Log.Debug("InternalActorsScriptGrabber - GetPage empty response for: {0}", strUrl);
     }
 
     if (cache && !string.IsNullOrEmpty(strBody))
     {
+      Log.Debug("InternalActorsScriptGrabber - GetPage put Page to Cache: {0}", strUrl);
       IMDBPageCache.Add(strUrl, strBody);
     }
     return strBody;
