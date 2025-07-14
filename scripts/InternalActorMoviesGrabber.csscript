@@ -2728,7 +2728,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     IMDBPageCache = new Hashtable();
   }
 
-  private static async Task<string> DownloadWebPage(string URL, out string absoluteUri)
+  private static async Task<Tuple<string, string>> DownloadWebPage(string URL)
   {
     try
     {      
@@ -2749,8 +2749,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
           {
             // Get the webpage as string
             string strBody = await response.Content.ReadAsStringAsync();
-            absoluteUri = response.RequestMessage.RequestUri.AbsoluteUri;
-            return strBody;
+            string absoluteUri = response.RequestMessage.RequestUri.AbsoluteUri;
+            return new Tuple<string, string>(absoluteUri, strBody);
           }
         }
       }
@@ -2783,9 +2783,10 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     try
     {
-      Task<string> downloadTask = DownloadWebPage(URL);
+      Task<Tuple<string, string>> downloadTask = DownloadWebPage(URL);
       downloadTask.Wait();
-      strBody = downloadTask.Result;
+      absoluteUri = downloadTask.Result.Item1;
+      strBody = downloadTask.Result.Item2;
     }
     catch (Exception ex)
     {
