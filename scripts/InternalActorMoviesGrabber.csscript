@@ -2731,7 +2731,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
   // Setup the HttpClient
   private static readonly HttpClient httpClient = new HttpClient();
           
-  private static async Task<string> DownloadWebPage(string URL, out absoluteUri)
+  private static async Task<string> DownloadWebPage(string URL, out string absoluteUri)
   {
     try
     {      
