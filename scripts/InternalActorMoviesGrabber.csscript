@@ -1414,6 +1414,12 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         }
       }
     }
+
+    if (actorList.Count == 0)
+    {
+      Log.Debug("GetIMDBMovieActorsList IMDB = {0}, Actors not found, fallback to TMDB.", imdbMovieID);
+      return GetTMDBMovieActorsList (imdbMovieID, shortActorsList);
+    }
     Log.Debug("InternalActorsGrabber - GetIMDBMovieActorsList - Actors found: {0}.", actorList.Count);
     return actorList;
   }
