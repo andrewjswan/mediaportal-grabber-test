@@ -119,7 +119,7 @@ namespace TestGrabberMP1
 
       try
       {
-        _asmHelper = new AsmHelper(CSScript.Load(scriptFileName, null, false));
+        _asmHelper = new AsmHelper(CSScript.LoadFile(scriptFileName, null, false));
         _grabber = (IIMDBScriptGrabber)_asmHelper.CreateObject("Grabber");
       }
       catch (Exception ex)
@@ -144,7 +144,7 @@ namespace TestGrabberMP1
 
       try
       {
-        _asmHelper = new AsmHelper(CSScript.Load(scriptFileName, null, false));
+        _asmHelper = new AsmHelper(CSScript.LoadFile(scriptFileName, null, false));
         InternalActorsGrabber = (IIMDBInternalActorsScriptGrabber)_asmHelper.CreateObject("InternalActorsGrabber");
       }
       catch (Exception ex)
@@ -169,7 +169,7 @@ namespace TestGrabberMP1
 
       try
       {
-        _asmHelper = new AsmHelper(CSScript.Load(scriptFileName, null, false));
+        _asmHelper = new AsmHelper(CSScript.LoadFile(scriptFileName, null, false));
         InternalMovieImagesGrabber = (InternalCSScriptGrabbersLoader.Movies.IInternalMovieImagesGrabber)_asmHelper.CreateObject("MovieImagesGrabber");
       }
       catch (Exception ex)
