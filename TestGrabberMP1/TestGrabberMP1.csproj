@@ -65,6 +65,9 @@
     <Reference Include="SharpDX.Direct3D9">
       <HintPath>..\External\SharpDX.Direct3D9.dll</HintPath>
     </Reference>
+    <Reference Include="SharpDX">
+      <HintPath>..\External\SharpDX.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Deployment" />
