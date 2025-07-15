@@ -1259,7 +1259,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       return GetTMDBMovieActorsList (imdbMovieID, shortActorsList);
     }
 
-    string regex = @"type=.application\/ld\+json.>(?<json>{.+?})<";
+    string regex = @"type=.application\/(ld\+)?json.>(?<json>{.+?})<";
     string json = Regex.Match(strBodyActors, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
     if (string.IsNullOrEmpty(json))
     {
@@ -1617,7 +1617,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       return oReturn;
     }
 
-    string regex = @"type=.application\/ld\+json.>(?<json>{.+?})<";
+    string regex = @"type=.application\/(ld\+)?json.>(?<json>{.+?})<";
     string json = Regex.Match(page, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
     if (string.IsNullOrEmpty(json))
     {
@@ -1667,7 +1667,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       _strBody = GetPage(strUrl, "utf-8", out uri);
     }
 
-    string regex = @"type=.application\/ld\+json.>(?<json>{.+?})<";
+    string regex = @"type=.application\/(ld\+)?json.>(?<json>{.+?})<";
     string json = Regex.Match(_strBody, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
     if (string.IsNullOrEmpty(json))
     {
