@@ -30,7 +30,8 @@ jobs:
           xcopy Log4Net.config "C:\ProgramData\Team MediaPortal\MediaPortal\" /Y
           xcopy strings_en.xml "C:\ProgramData\Team MediaPortal\MediaPortal\Language\" /Y
           xcopy sqlite.dll ${{ github.workspace }}\TestGrabberMP1\bin\Release\ /Y
-          xcopy ..\scripts\InternalMovieImagesGrabber.csscript "C:\ProgramData\Team MediaPortal\MediaPortal\scripts\" /Y
+
+          mklink /J "C:\ProgramData\Team MediaPortal\MediaPortal\scripts" "..\scripts"
         working-directory: ${{ github.workspace }}\External
         shell: cmd
 
