@@ -288,7 +288,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     Log.Debug("{0} Search movie {1} started...", strGrabber, title);
     List<TMDBUrl> tReturn = new List<TMDBUrl>();
 
-    string searchStr = API_LANG == "RU" ? title.Replace("РЃ", "Р•").Replace("С‘", "Рµ") : title;
+    string searchStr = API_LANG == "RU" ? title.Replace("Ё", "Е").Replace("ё", "е") : title;
     string imdbMovieID = string.Empty;
     string tmdbMovieID = string.Empty;
 
@@ -2170,9 +2170,9 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   private static Dictionary<string, string> Groups = new Dictionary<string, string>() // Language - Add to Group|Groups for Our films|Groups for Foreign films
   {
     { "EN", "F|Our films|Foreign films" },
-	{ "RU", "T|РќР°С€Рё С„РёР»СЊРјС‹|РРЅРѕСЃС‚СЂР°РЅРЅС‹Рµ С„РёР»СЊРјС‹" },
-	{ "UA", "T|РќР°С€С– С„С–Р»СЊРјРё|Р†РЅРѕР·РµРјРЅС– С„С–Р»СЊРјРё"},
-	{ "DE", "F|Unsere Filme|AuslГ¤ndische Filme" }
+	{ "RU", "T|Наши фильмы|Иностранные фильмы" },
+	{ "UA", "T|Наші фільми|Іноземні фільми"},
+	{ "DE", "F|Unsere Filme|Ausländische Filme" }
   };
 
   private static bool GRABBER_ADDTOUSERGROUP_Lang()
@@ -2213,8 +2213,8 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   private static Dictionary<string, string> Technical = new Dictionary<string, string>()
   {
     { "EN", "Technical specifications" },
-	{ "RU", "РРЅС„РѕСЂРјР°С†РёСЏ Рѕ С„РёР»СЊРјРµ" },
-	{ "UA", "Р†РЅС„РѕСЂРјР°С†С–СЏ РїСЂРѕ С„С–Р»СЊРј"},
+	{ "RU", "Информация о фильме" },
+	{ "UA", "Інформація про фільм"},
 	{ "DE", "Technische Spezifikationen" }
   };
 
