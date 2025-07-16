@@ -214,6 +214,7 @@ namespace TestGrabberMP1
           {
             Log.Info("----------------------------------------------------------------------");
             Log.Info("--- {0} - {1}", _grabber.GetName() , movieTitle);
+            Log.Info("--- {0}", grabber);
             Log.Info("----------------------------------------------------------------------");
 
             ArrayList elements = new ArrayList();
