@@ -27,6 +27,8 @@ namespace TestGrabberMP1
     private static InternalCSScriptGrabbersLoader.Movies.IInternalMovieImagesGrabber InternalMovieImagesGrabber;
 
     private readonly bool autoStart;
+    private readonly bool errorReporting;
+    private readonly bool haveError;
 
     protected override void Dispose(bool disposing)
     {
@@ -95,6 +97,8 @@ namespace TestGrabberMP1
 
       string[] args = Environment.GetCommandLineArgs();
       autoStart = args.Length > 1;
+      errorReporting = args.Length > 2;
+      haveError = false;
 
       if (autoStart)
       {
@@ -106,7 +110,6 @@ namespace TestGrabberMP1
     {
       this.button1.Click += Button1_Click;
     }
-
 
     bool LoadScript(string grabber)
     {
@@ -126,6 +129,7 @@ namespace TestGrabberMP1
       }
       catch (Exception ex)
       {
+        haveError = true;
         Log.Error("InfoGrabber LoadScript() - file: {0}, message : {1}", scriptFileName, ex.Message);
         return false;
       }
@@ -151,6 +155,7 @@ namespace TestGrabberMP1
       }
       catch (Exception ex)
       {
+        haveError = true;
         Log.Error("InternalActorMoviesGrabber LoadScript() - file: {0}, message : {1}", scriptFileName, ex.Message);
         return false;
       }
@@ -176,6 +181,7 @@ namespace TestGrabberMP1
       }
       catch (Exception ex)
       {
+        haveError = true;
         Log.Error("InternalMovieImagesGrabber LoadScript() - file: {0}, message : {1}", scriptFileName, ex.Message);
         return false;
       }
@@ -233,6 +239,7 @@ namespace TestGrabberMP1
         }
         catch
         {
+          haveError = true;
         }
       }
 
@@ -257,6 +264,7 @@ namespace TestGrabberMP1
         }
         catch (Exception ex)
         {
+          haveError = true;
           Log.Error("--- {0}", ex.Message);
           Log.Info("--- ROLLBACK TO DEFAULT ----------------------------------------------");
           actorList = new ArrayList { "Bruce Willis", "nm0000246" };
@@ -311,6 +319,7 @@ namespace TestGrabberMP1
         }
         catch (Exception ex)
         { 
+          haveError = true;
           Log.Error("--- {0}", ex.Message);
         }
         Log.Info("--- END --------------------------------------------------------------");
@@ -323,7 +332,10 @@ namespace TestGrabberMP1
           Log.Info("----------------------------------------------------------------------");
           Log.Info("--- {0} - {1}", "Thumb", InternalActorsGrabber.GetThumbImdb(movie.IMDBNumber));
         }
-        catch { }
+        catch
+        {
+          haveError = true;
+        }
         Log.Info("--- END --------------------------------------------------------------");
         Log.Info(string.Empty);
       }
@@ -408,7 +420,14 @@ namespace TestGrabberMP1
       button1.Enabled = true;
       if (autoStart)
       {
-        System.Environment.Exit(0);
+        if (errorReporting && haveError)
+        {
+          System.Environment.Exit(1);
+        }
+        else
+        {
+          System.Environment.Exit(0);
+        }
       }
     }
   }
