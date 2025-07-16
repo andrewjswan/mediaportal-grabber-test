@@ -155,7 +155,6 @@ namespace TestGrabberMP1
       }
       catch (Exception ex)
       {
-        haveError = true;
         Log.Error("InternalActorMoviesGrabber LoadScript() - file: {0}, message : {1}", scriptFileName, ex.Message);
         return false;
       }
@@ -181,7 +180,6 @@ namespace TestGrabberMP1
       }
       catch (Exception ex)
       {
-        haveError = true;
         Log.Error("InternalMovieImagesGrabber LoadScript() - file: {0}, message : {1}", scriptFileName, ex.Message);
         return false;
       }
@@ -205,6 +203,7 @@ namespace TestGrabberMP1
       {
         if (!LoadScript(grabber))
         {
+          haveError = true;
           return;
         }
 
@@ -410,6 +409,10 @@ namespace TestGrabberMP1
         }
         Log.Info("--- END --------------------------------------------------------------");
         Log.Info(string.Empty);
+      }
+      else
+      {
+        haveError = true;
       }
     }
 
