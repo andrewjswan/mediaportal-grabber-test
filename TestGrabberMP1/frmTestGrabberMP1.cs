@@ -28,7 +28,7 @@ namespace TestGrabberMP1
 
     private readonly bool autoStart;
     private readonly bool errorReporting;
-    private readonly bool haveError;
+    private bool haveError;
 
     protected override void Dispose(bool disposing)
     {
