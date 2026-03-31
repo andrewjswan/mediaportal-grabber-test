@@ -379,7 +379,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
             {
               if (!string.IsNullOrWhiteSpace(match.Groups[2].Value))
               {
-                IMDB.IMDBUrl newUrl = new IMDB.IMDBUrl(string.Format(@"https://www.imdb.com/name/{0}/", match.Groups[2].Value), match.Groups[1].Value + ", DB", "IMDB");
+                IMDB.IMDBUrl newUrl = new IMDB.IMDBUrl(string.Format(@"https://m.imdb.com/name/{0}/", match.Groups[2].Value), match.Groups[1].Value + ", DB", "IMDB");
                 elements.Add(newUrl);
               }
             }
@@ -2768,57 +2768,81 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       }
     }
 
-    HttpWebRequest req;
-    try
+    int maxRetries = 3;
+    int delayMs = 2000;
+
+    for (int i = 0; i < maxRetries; i++)
     {
-      // Make the Webrequest
-      req = (HttpWebRequest)WebRequest.Create(strUrl);
+	  HttpWebRequest req = null;
+	  try
+	  {
+		// Make the Webrequest
+		req = (HttpWebRequest)WebRequest.Create(strUrl);
+	
+		// Set Headers
+		req.UserAgent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+		req.Headers.Add("Accept-Language", "en-US,en;q=0.5");
+	
+		// Proxy 
+		req.Proxy.Credentials = CredentialCache.DefaultCredentials;
+	
+		// Cookie
+		req.CookieContainer = new CookieContainer();
+	
+		// Timeout
+		req.Timeout = 20000;
+		req.ReadWriteTimeout = 20000;
+	
+		// Response
+        using (HttpWebResponse response = (HttpWebResponse)req.GetResponse())
+        {
+          if (response.StatusCode == HttpStatusCode.Accepted)
+          {
+            Log.Debug("InternalActorsScriptGrabber - GetPage: Received 202 Accepted. Retry {0}/{1}...", i + 1, maxRetries);
+            System.Threading.Thread.Sleep(delayMs);
+            continue;
+          }
+          if (response.StatusCode != HttpStatusCode.OK)
+          {
+            Log.Debug("InternalActorsScriptGrabber - GetPage: Response code {0}/{1}", (int)response.StatusCode, response.StatusCode);
+          }
 
-      // Set Headers
-      req.UserAgent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
-      req.Headers.Add("Accept-Language", "en-US,en;q=0.5");
+          // URI
+          absoluteUri = response.ResponseUri.AbsoluteUri;
 
-      // Proxy 
-      req.Proxy.Credentials = CredentialCache.DefaultCredentials;
+          // Encoding: depends on selected page
+		  Encoding encode = Encoding.GetEncoding(strEncode);
 
-      // Cookie
-      req.CookieContainer = new CookieContainer();
+          // Get Page
+          using (Stream receiveStream = response.GetResponseStream())
+          {
+            using (StreamReader sr = new StreamReader(receiveStream, encode))
+            {
+              strBody = sr.ReadToEnd().Trim();
+            }
+          }
+        }
 
-      // Timeout
-      req.Timeout = 20000;
-      req.ReadWriteTimeout = 20000;
-
-      // Response
-      WebResponse response = req.GetResponse();
-      Stream receiveStream = response.GetResponseStream();
-
-      HttpWebResponse httpResponse = (System.Net.HttpWebResponse)response;
-      if (httpResponse.StatusCode != HttpStatusCode.OK)
-      {
-        Log.Debug("InternalActorsScriptGrabber - GetPage: Response code {0} for WebPage: {1}/{2}", HideAPIKey(strUrl), (int)httpResponse.StatusCode, httpResponse.StatusCode);
-      }
-
-      // Encoding: depends on selected page
-      Encoding encode = Encoding.GetEncoding(strEncode);
-
-      // Get Page
-      using (StreamReader sr = new StreamReader(receiveStream, encode))
-      {
-        strBody = sr.ReadToEnd();
-      }
-      absoluteUri = response.ResponseUri.AbsoluteUri;
-      response.Close();
+        if (!string.IsNullOrEmpty(strBody))
+        {
+          break;
+        }
+	  }
+	  catch (Exception ex)
+	  {
+		Log.Error("InternalActorsScriptGrabber - GetPage: Attempt {0}/{1} Exception for WebPage: {2}/{3} err:{4}", i + 1, maxRetries, HideAPIKey(strUrl), absoluteUri, ex.Message);
+        if (i == maxRetries - 1)
+        {
+          break;
+        }
+        System.Threading.Thread.Sleep(delayMs);
+	  }
+	  finally
+	  {
+		req = null;
+	  }
     }
-    catch (Exception ex)
-    {
-      Log.Error("InternalActorsScriptGrabber - GetPage: Exception for WebPage: {0} err:{1}", HideAPIKey(strUrl), ex.Message);
-    }
-    finally
-    {
-      req = null;
-    }
 
-    strBody = strBody.Trim();
     if (string.IsNullOrEmpty(strBody))
     {
       Log.Debug("InternalActorsScriptGrabber - GetPage empty response for: {0}", HideAPIKey(strUrl));
