@@ -476,7 +476,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         // Get IMDBID
         actor.IMDBActorID = matchimdbid.Groups["imdbid"].Value;
         Log.Debug("InternalActorsGrabber - GetActorDetails - IMDBID Found {0}", actor.IMDBActorID);
-        url.URL = string.Format("https://m.imdb.com/name/{0}/", actor.IMDBActorID);
+        url.URL = string.Format("https://www.imdb.com/name/{0}/", actor.IMDBActorID);
       }
       else
       {
