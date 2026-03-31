@@ -2782,7 +2782,17 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 		// Set Headers
 		req.UserAgent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 		req.Headers.Add("Accept-Language", "en-US,en;q=0.5");
-	
+        
+        req.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8";
+        req.Headers.Add("sec-ch-ua", "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\"");
+        req.Headers.Add("sec-ch-ua-mobile", "?0");
+        req.Headers.Add("sec-ch-ua-platform", "\"Windows\"");
+        req.Headers.Add("sec-fetch-dest", "document");
+        req.Headers.Add("sec-fetch-mode", "navigate");
+        req.Headers.Add("sec-fetch-site", "none");
+        req.Headers.Add("sec-fetch-user", "?1");
+        req.Headers.Add("upgrade-insecure-requests", "1");
+
 		// Proxy 
 		req.Proxy.Credentials = CredentialCache.DefaultCredentials;
 	
