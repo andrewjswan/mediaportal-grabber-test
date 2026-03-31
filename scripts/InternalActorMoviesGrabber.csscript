@@ -2789,9 +2789,10 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       WebResponse response = req.GetResponse();
       Stream receiveStream = response.GetResponseStream();
 
-      if (response.StatusCode != HttpStatusCode.OK)
+      HttpWebResponse httpResponse = (System.Net.HttpWebResponse)response;
+      if (httpResponse.StatusCode != HttpStatusCode.OK)
       {
-        Log.Error("InternalActorsScriptGrabber - GetPage: Response code {0} for WebPage: {1}", HideAPIKey(strUrl), response.StatusCode);
+        Log.Error("InternalActorsScriptGrabber - GetPage: Response code {0} for WebPage: {1}", HideAPIKey(strUrl), httpResponse.StatusCode);
       }
 
       // Encoding: depends on selected page
