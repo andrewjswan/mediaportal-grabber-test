@@ -26,7 +26,7 @@ using Newtonsoft.Json;
 
 internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 {
-  const string strGrabberVersion = "20250719.I";
+  const string strGrabberVersion = "20260401.I";
 
   private string _strBody = string.Empty;
   private TMDBMovie tmdbMovie;
@@ -1938,7 +1938,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
   {
     { "RU", @"^([АаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя\s\.-]+)$"},
     { "UA", @"^([АаБбВвГгҐґДдЕеЄєЖжЗзИиІіЇїЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЬьЮюЯя\s\.-]+)$"},
-	{ "DE", @"^([AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZzÄäÖöÜüẞß\s\.-]+)$"}
+    { "DE", @"^([AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZzÄäÖöÜüẞß\s\.-]+)$"}
   };
 
   private static bool CanTranslate()
@@ -2541,9 +2541,9 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
   private static Dictionary<string, string> Zodiac = new Dictionary<string, string>()
   {
     { "EN", "Capricorn|Aquarius|Pisces|Aries|Taurus|Gemini|Cancer|Leo|Virgo|Libra|Scorpio|Sagittarius" },
-	{ "RU", "Козерог|Водолей|Рыбы|Овен|Телец|Близнецы|Рак|Лев|Дева|Весы|Скорпион|Стрелец" },
-	{ "UA", "Козеріг|Водолій|Риби|Овен|Телець|Близнюки|Рак|Лев|Діва|Терези|Скорпіон|Стрілець"},
-	{ "DE", "Steinbock|Wassermann|Fische|Widder|Stier|Zwillinge|Krebs|Löwe|Jungfrau|Waage|Skorpion|Schütze" }
+    { "RU", "Козерог|Водолей|Рыбы|Овен|Телец|Близнецы|Рак|Лев|Дева|Весы|Скорпион|Стрелец" },
+    { "UA", "Козеріг|Водолій|Риби|Овен|Телець|Близнюки|Рак|Лев|Діва|Терези|Скорпіон|Стрілець"},
+    { "DE", "Steinbock|Wassermann|Fische|Widder|Stier|Zwillinge|Krebs|Löwe|Jungfrau|Waage|Skorpion|Schütze" }
   };
 
   private static string GetZodiac(string sDate)
@@ -2558,7 +2558,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     {
       return string.Empty;
     }
-	  
+      
     return GetZodiac(dt);
   }
 
@@ -2569,19 +2569,19 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       return string.Empty;
     }
 
-	string zodiac = Zodiac.Where(x => x.Key == API_LANG).Select(x => x.Value).FirstOrDefault();
-	if (string.IsNullOrEmpty(zodiac))
-	{
+    string zodiac = Zodiac.Where(x => x.Key == API_LANG).Select(x => x.Value).FirstOrDefault();
+    if (string.IsNullOrEmpty(zodiac))
+    {
       zodiac = Zodiac.Where(x => x.Key == "EN").Select(x => x.Value).FirstOrDefault();
-	}
-	if (string.IsNullOrEmpty(zodiac))
-	{
-	  return string.Empty;
-	}
+    }
+    if (string.IsNullOrEmpty(zodiac))
+    {
+      return string.Empty;
+    }
 
     int month = dt.Month;
     int day = dt.Day;
-	string[] zodiac_sign = zodiac.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+    string[] zodiac_sign = zodiac.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
     switch (month)
     {
       case 1:
@@ -2723,7 +2723,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       {
         i++;
         var punctuation = line.Where(Char.IsPunctuation).Distinct().ToArray();
-        var words = line.Split().Select(x => x.Trim(punctuation));		
+        var words = line.Split().Select(x => x.Trim(punctuation));      
         description += string.IsNullOrEmpty(description) ? line : "\n" + line;
         if (words == null || words.Count() > 3 || i >= 2)
         {
@@ -2768,89 +2768,58 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       }
     }
 
-    int maxRetries = 3;
-    int delayMs = 2000;
-
-    for (int i = 0; i < maxRetries; i++)
+    HttpWebRequest req = null;
+    try
     {
-	  HttpWebRequest req = null;
-	  try
-	  {
-		// Make the Webrequest
-		req = (HttpWebRequest)WebRequest.Create(strUrl);
-	
-		// Set Headers
-		req.UserAgent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
-		req.Headers.Add("Accept-Language", "en-US,en;q=0.5");
-        
-        req.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8";
-        req.Headers.Add("sec-ch-ua", "\"Chromium\";v=\"122\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"122\"");
-        req.Headers.Add("sec-ch-ua-mobile", "?0");
-        req.Headers.Add("sec-ch-ua-platform", "\"Windows\"");
-        req.Headers.Add("sec-fetch-dest", "document");
-        req.Headers.Add("sec-fetch-mode", "navigate");
-        req.Headers.Add("sec-fetch-site", "none");
-        req.Headers.Add("sec-fetch-user", "?1");
-        req.Headers.Add("upgrade-insecure-requests", "1");
-
-		// Proxy 
-		req.Proxy.Credentials = CredentialCache.DefaultCredentials;
-	
-		// Cookie
-		req.CookieContainer = new CookieContainer();
-	
-		// Timeout
-		req.Timeout = 20000;
-		req.ReadWriteTimeout = 20000;
-	
-		// Response
-        using (HttpWebResponse response = (HttpWebResponse)req.GetResponse())
+      // Make the Webrequest
+      req = (HttpWebRequest)WebRequest.Create(strUrl);
+    
+      // Set Headers
+      req.UserAgent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+      req.Headers.Add("Accept-Language", "en-US,en;q=0.5");
+      req.Accept = "application/json";
+  
+      // Proxy 
+      req.Proxy.Credentials = CredentialCache.DefaultCredentials;
+  
+      // Cookie
+      req.CookieContainer = new CookieContainer();
+  
+      // Timeout
+      req.Timeout = 20000;
+      req.ReadWriteTimeout = 20000;
+  
+      // Response
+      using (HttpWebResponse response = (HttpWebResponse)req.GetResponse())
+      {
+        if (response.StatusCode != HttpStatusCode.OK)
         {
-          if (response.StatusCode == HttpStatusCode.Accepted)
+          Log.Debug("InternalActorsScriptGrabber - GetPage: Response code {0}/{1}", (int)response.StatusCode, response.StatusCode);
+        }
+  
+        // URI
+        absoluteUri = response.ResponseUri.AbsoluteUri;
+  
+        // Encoding: depends on selected page
+        Encoding encode = Encoding.GetEncoding(strEncode);
+  
+        // Get Page
+        using (Stream receiveStream = response.GetResponseStream())
+        {
+          using (StreamReader sr = new StreamReader(receiveStream, encode))
           {
-            Log.Debug("InternalActorsScriptGrabber - GetPage: Received 202 Accepted. Retry {0}/{1}...", i + 1, maxRetries);
-            System.Threading.Thread.Sleep(delayMs);
-            continue;
-          }
-          if (response.StatusCode != HttpStatusCode.OK)
-          {
-            Log.Debug("InternalActorsScriptGrabber - GetPage: Response code {0}/{1}", (int)response.StatusCode, response.StatusCode);
-          }
-
-          // URI
-          absoluteUri = response.ResponseUri.AbsoluteUri;
-
-          // Encoding: depends on selected page
-		  Encoding encode = Encoding.GetEncoding(strEncode);
-
-          // Get Page
-          using (Stream receiveStream = response.GetResponseStream())
-          {
-            using (StreamReader sr = new StreamReader(receiveStream, encode))
-            {
-              strBody = sr.ReadToEnd().Trim();
-            }
+            strBody = sr.ReadToEnd().Trim();
           }
         }
-
-        if (!string.IsNullOrEmpty(strBody))
-        {
-          break;
-        }
-	  }
-	  catch (Exception ex)
-	  {
-		Log.Error("InternalActorsScriptGrabber - GetPage: Attempt {0}/{1} Exception for WebPage: {2}/{3} err:{4}", i + 1, maxRetries, HideAPIKey(strUrl), absoluteUri, ex.Message);
-        if (i == maxRetries - 1)
-        {
-          break;
-        }
-        System.Threading.Thread.Sleep(delayMs);
-	  }
-	  finally
-	  {
-		req = null;
-	  }
+      }
+    }
+    catch (Exception ex)
+    {
+      Log.Error("InternalActorsScriptGrabber - GetPage: Exception for WebPage: {0}/{1} err:{2}", HideAPIKey(strUrl), HideAPIKey(absoluteUri), ex.Message);
+    }
+    finally
+    {
+      req = null;
     }
 
     if (string.IsNullOrEmpty(strBody))
