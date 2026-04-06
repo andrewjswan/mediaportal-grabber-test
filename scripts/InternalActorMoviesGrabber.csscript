@@ -1229,7 +1229,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     try
     {
-      NamesDetails Actor = JsonConvert.DeserializeObject<NamesDetails>(json);
+      IMDBNamesDetails Actor = JsonConvert.DeserializeObject<IMDBNamesDetails>(json);
       if (Actor == null)
       {
         Log.Debug("GetIMDBActorDetails IMDB = {0}, JSON changed!?.", imdbID);
@@ -1287,7 +1287,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     try
     {
-      TitlessDetails Movie = JsonConvert.DeserializeObject<TitlessDetails>(json);
+      IMDBTitlessDetails Movie = JsonConvert.DeserializeObject<IMDBTitlessDetails>(json);
       if (Movie == null)
       {
         Log.Debug("GetIMDBDetails IMDB = {0}, JSON changed!?.", imdbID);
@@ -1343,7 +1343,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     try
     {
-      TitleCredits Credits = JsonConvert.DeserializeObject<TitleCredits>(json);
+      IMDBTitleCredits Credits = JsonConvert.DeserializeObject<IMDBTitleCredits>(json);
       if (Credits == null)
       {
         Log.Debug("GetIMDBDetails IMDB = {0}, JSON changed!?.", imdbID);
@@ -1544,14 +1544,14 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     public int day { get; set; }
   }
 
-  public class MeterRanking
+  public class IMDBMeterRanking
   {
     public int currentRank { get; set; }
     public string changeDirection { get; set; }
     public int difference { get; set; }
   }
 
-  public class PrimaryImage
+  public class IMDBPrimaryImage
   {
     public string url { get; set; }
     public int width { get; set; }
@@ -1559,36 +1559,36 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     public string type { get; set; }
   }
 
-  public class Interest // Genres
+  public class IMDBInterest // Genres
   {
     public string id { get; set; }
     public string name { get; set; }
-    public PrimaryImage primaryImage { get; set; }
+    public IMDBPrimaryImage primaryImage { get; set; }
     public string description { get; set; }
     public bool isSubgenre { get; set; }
-    // public List<SimilarInterest> similarInterests { get; set; }
+    // public List<IMDBSimilarInterest> similarInterests { get; set; }
   }
 
-  public class Metacritic
+  public class IMDBMetacritic
   {
     public string url { get; set; }
     public int score { get; set; }
     public int reviewCount { get; set; }
   }
 
-  public class SpokenLanguage
+  public class IMDBSpokenLanguage
   {
     public string code { get; set; }
     public string name { get; set; }
   }
 
-  public class OriginCountry
+  public class IMDBOriginCountry
   {
     public string code { get; set; }
     public string name { get; set; }
   }
 
-  public class Rating
+  public class IMDBRating
   {
     public int aggregateRating { get; set; }
     public int voteCount { get; set; }
@@ -1596,12 +1596,12 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   // Names
   // https://api.imdbapi.dev/names/nm0000116
-  public class NamesDetails
+  public class IMDBNamesDetails
   {
     public string id { get; set; }
     public string displayName { get; set; }
     public List<string> alternativeNames { get; set; }
-    public PrimaryImage primaryImage { get; set; }
+    public IMDBPrimaryImage primaryImage { get; set; }
     public List<string> primaryProfessions { get; set; }
     public string biography { get; set; }
     public int heightCm { get; set; }
@@ -1611,46 +1611,46 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     public IMDBDate deathDate { get; set; }
     public string deathLocation { get; set; }
     public string deathReason { get; set; }
-    public MeterRanking meterRanking { get; set; }
+    public IMDBMeterRanking meterRanking { get; set; }
   }
 
   // Titles
   // https://api.imdbapi.dev/titles/tt1532503
-  public class TitlessDetails
+  public class IMDBTitlessDetails
   {
     public string id { get; set; }
     public string type { get; set; }
     public bool isAdult { get; set; }
     public string primaryTitle { get; set; }
     public string originalTitle { get; set; }
-    public PrimaryImage primaryImage { get; set; }
+    public IMDBPrimaryImage primaryImage { get; set; }
     public int startYear { get; set; }
     public int endYear { get; set; }
     public int runtimeSeconds { get; set; }
     public List<string> genres { get; set; }
-    public Rating rating { get; set; }
-    public Metacritic metacritic { get; set; }
+    public IMDBRating rating { get; set; }
+    public IMDBMetacritic metacritic { get; set; }
     public string plot { get; set; }
-    public List<NamesDetails> directors { get; set; }
-    public List<NamesDetails> writers { get; set; }
-    public List<NamesDetails> stars { get; set; }
-    public List<OriginCountry> originCountries { get; set; }
-    public List<SpokenLanguage> spokenLanguages { get; set; }
-    public List<Interest> interests { get; set; }
+    public List<IMDBNamesDetails> directors { get; set; }
+    public List<IMDBNamesDetails> writers { get; set; }
+    public List<IMDBNamesDetails> stars { get; set; }
+    public List<IMDBOriginCountry> originCountries { get; set; }
+    public List<IMDBSpokenLanguage> spokenLanguages { get; set; }
+    public List<IMDBInterest> interests { get; set; }
   }
 
   // Title Credits
   // https://api.imdbapi.dev/titles/tt1532503/credits
-  public class Credit
+  public class IMDBCredit
   {
-    public NamesDetails name { get; set; }
+    public IMDBNamesDetails name { get; set; }
     public string category { get; set; }
     public List<string> characters { get; set; }
   }
 
-  public class TitleCredits
+  public class IMDBTitleCredits
   {
-    public List<Credit> credits { get; set; }
+    public List<IMDBCredit> credits { get; set; }
     public int totalCount { get; set; }
     public string nextPageToken { get; set; }
   }
