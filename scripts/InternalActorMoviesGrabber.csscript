@@ -26,9 +26,8 @@ using Newtonsoft.Json;
 
 internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 {
-  const string strGrabberVersion = "20260401.I";
+  const string strGrabberVersion = "20260405.I";
 
-  private string _strBody = string.Empty;
   private TMDBMovie tmdbMovie;
   private TMDBMovie imdbMovie;
 
@@ -89,7 +88,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       string strUrl = String.Format("https://m.imdb.com/title/{0}/", movie.IMDBNumber);
       string regex = @"plotText.+?plainText.:.(?<moviePlot>.+?).,.__typename";
 
-      _strBody = string.Empty;
+      string _strBody = string.Empty;
       shortPlot = GetPlot(strUrl, regex, ref _strBody);
 
       // Full plot
@@ -340,8 +339,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         movie.Cast = strActor;
       }
     }
-
-    _strBody = string.Empty;
   }
 
   #endregion
@@ -476,7 +473,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         // Get IMDBID
         actor.IMDBActorID = matchimdbid.Groups["imdbid"].Value;
         Log.Debug("InternalActorsGrabber - GetActorDetails - IMDBID Found {0}", actor.IMDBActorID);
-        url.URL = string.Format("https://www.imdb.com/name/{0}/?ref_=nv_sr_srsg_0_tt_3_nm_5_in_0_q_{1}", actor.IMDBActorID, actor.Name.Replace("*d", ""));
+        url.URL = string.Format("https://api.imdbapi.dev/names/{0}", actor.IMDBActorID);
       }
       else
       {
@@ -696,8 +693,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       #endregion
 
-      parser.resetPosition();
-
       #region Actor biography
 
       // Mini Biography
@@ -862,78 +857,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     return false;
   }
 
-  // Actor Movies
-  public class JsonIMDBActorMovies
-  {
-      public JsonIMDBActorMoviesProps props { get; set; }
-  }
-
-  public class JsonIMDBActorMoviesProps
-  {
-      public JsonIMDBActorMoviesPageProps pageProps { get; set; }
-  }
-
-  public class JsonIMDBActorMoviesPageProps
-  {
-      public JsonIMDBActorMoviesSearchResults searchResults { get; set; }
-  }
-
-  public class JsonIMDBActorMoviesSearchResults
-  {
-      public JsonIMDBActorMoviesTitleResults titleResults { get; set; }
-  }
-
-  public class JsonIMDBActorMoviesTitleResults
-  {
-      public List<JsonIMDBActorMoviesTitleListItem> titleListItems { get; set; }
-      public string total { get; set; }
-  }
-
-  public class JsonIMDBActorMoviesTitleListItem
-  {
-      public string titleId { get; set; }
-      public string originalTitleText { get; set; }
-      public string titleText { get; set; }
-      public JsonIMDBActorMoviesReleaseDate releaseDate { get; set; }
-      public JsonIMDBActorMoviesTitleType titleType { get; set; }
-      public JsonIMDBActorMoviesCreditsMetadataForName creditsMetadataForName { get; set; }
-  }
-
-  public class JsonIMDBActorMoviesReleaseDate
-  {
-      public string day { get; set; }
-      public string month { get; set; }
-      public string year { get; set; }
-  }
-
-  public class JsonIMDBActorMoviesTitleType
-  {
-      public string id { get; set; }
-  }
-
-  public class JsonIMDBActorMoviesCreditsMetadataForName
-  {
-      public List<JsonIMDBActorMoviesCrew> crews { get; set; }
-      public JsonIMDBActorMoviesCast cast { get; set; }
-  }
-
-  public class JsonIMDBActorMoviesCrew
-  {
-      public JsonIMDBActorMoviesCategory category { get; set; }
-  }
-
-  public class JsonIMDBActorMoviesCast
-  {
-      public JsonIMDBActorMoviesCategory category { get; set; }
-      public List<string> characters { get; set; }
-  }
-
-  public class JsonIMDBActorMoviesCategory
-  {
-      public string id { get; set; }
-      public string text { get; set; }
-  }
-
   private void GetActorMovies(IMDBActor imdbActor, bool actor, bool actress, bool director, bool writer, bool self)
   {
     string filter = string.Empty;
@@ -1095,47 +1018,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     {
       Log.Debug("GetActorMovies IMDB = {0}, Exception {1}, JSON changed!?.", imdbActor.IMDBActorID, ex.Message);
     }
-  }
-
-  /// <summary>
-  /// Removes HTML tags, cleans \n (to space) and \r (to empty string), decode string and remove last slash char
-  /// </summary>
-  /// <param name="stringToClean"></param>
-  /// <returns></returns>
-  private string CleanCrlf(string stringToClean)
-  {
-    string cleanString = string.Empty;
-
-    cleanString = Utils.stripHTMLtags(stringToClean).Trim();
-    cleanString = HttpUtility.HtmlDecode(cleanString.Replace("\n", " ").Replace("\r", string.Empty).Trim());
-    cleanString = cleanString.Replace("&nbsp;", " ").Trim();
-    cleanString = cleanString.Replace("  /", string.Empty).Trim();
-
-    if (cleanString != null && cleanString.EndsWith("/"))
-    {
-      cleanString = cleanString.Remove(cleanString.LastIndexOf("/"));
-    }
-
-    return cleanString;
-  }
-
-  private string RemoveParenthesis(string name)
-  {
-    while (name.IndexOf("(") != -1)
-    {
-      int start = name.IndexOf("(");
-      int end = name.IndexOf(")");
-      if (end != -1)
-      {
-        name = name.Substring(0, start) + name.Substring(end + 1);
-      }
-      else
-      {
-        break;
-      }
-    }
-
-    return name;
   }
 
   #endregion
@@ -1332,279 +1214,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   #endregion
 
-  #region IMDB Json
-
-  public class JsonIMDBBase
-  {
-    [JsonProperty("@type")]
-    public string type { get; set; }
-  }
-
-  public class JsonIMDBText
-  {
-    public string text { get; set; }
-  }
-
-  public class JsonIMDBPlainText
-  {
-    public string plainText { get; set; }
-  }
-
-  public class JsonIMDBReleaseYear
-  {
-    public int year { get; set; }
-  }
-
-  public class JsonIMDBPlot
-  {
-    public JsonIMDBPlainText plotText { get; set; }
-  }
-
-  public class JsonIMDBPrimaryImage
-  {
-    public string url { get; set; }
-    public int height { get; set; }
-    public int width { get; set; }
-    public JsonIMDBPlainText caption { get; set; }
-  }
-  public class JsonIMDBPosterData
-  {
-    public string constId { get; set; }
-    public JsonIMDBPosterImage image { get; set; }
-    public string type { get; set; }
-  }
-
-  public class JsonIMDBPosterImage
-  {
-    public string url { get; set; }
-    public int maxHeight { get; set; }
-    public int maxWidth { get; set; }
-    public string caption { get; set; }
-  }
-
-  // Movie
-  public class JsonIMDBPerson : JsonIMDBBase
-  {
-    public string url { get; set; }
-    public string name { get; set; }
-  }
-
-  public class JsonIMDBActor : JsonIMDBPerson
-  {
-      public string image { get; set; }
-      public string description { get; set; }
-      public string birthDate { get; set; }
-      public string deathDate { get; set; }
-  }    
-
-  public class JsonIMDBAggregateRating : JsonIMDBBase
-  {
-    public int ratingCount { get; set; }
-    public int bestRating { get; set; }
-    public int worstRating { get; set; }
-    public double ratingValue { get; set; }
-  }
-
-  public class JsonIMDBMovie : JsonIMDBBase
-  {
-    [JsonProperty("@context")]
-    public string context { get; set; }
-
-    public string url { get; set; }
-    public string name { get; set; }
-    public string alternateName { get; set; }
-    public string image { get; set; }
-    public string description { get; set; }
-    public JsonIMDBAggregateRating aggregateRating { get; set; }
-    public string contentRating { get; set; }
-    public List<string> genre { get; set; }
-    public string datePublished { get; set; }
-    public string keywords { get; set; }
-    public List<JsonIMDBPerson> actor { get; set; }
-    public List<JsonIMDBPerson> director { get; set; }
-    public List<JsonIMDBPerson> creator { get; set; }
-    public string duration { get; set; }
-  }
-
-  // IMDB Awards
-  public class JsonIMDBAwards
-  {
-    public JsonIMDBAwardsProps props { get; set; }
-    public string page { get; set; }
-  }
-
-  public class JsonIMDBAwardsProps
-  {
-    public JsonIMDBAwardsPageProps pageProps { get; set; }
-  }
-
-  public class JsonIMDBAwardsPageProps
-  {
-    public JsonIMDBAwardsContentData contentData { get; set; }
-  }
-
-  public class JsonIMDBAwardsContentData
-  {
-    public string parentDisplayText { get; set; }
-    public JsonIMDBEntityMetadata entityMetadata { get; set; }
-    public JsonIMDBPosterData posterData { get; set; }
-    public List<JsonIMDBAwardsCategory> categories { get; set; }
-    public int nominationsCount { get; set; }
-    public int winsCount { get; set; }
-  }
-
-  public class JsonIMDBEntityMetadata
-  {
-    public string id { get; set; }
-    public JsonIMDBText titleText { get; set; }
-    public JsonIMDBText originalTitleText { get; set; }
-    public JsonIMDBReleaseYear releaseYear { get; set; }
-    public JsonIMDBPlot plot { get; set; }
-    public JsonIMDBPrimaryImage primaryImage { get; set; }
-  }
-
-  public class JsonIMDBAwardsCategory
-  {
-    public string id { get; set; }
-    public string name { get; set; }
-    public JsonIMDBAwardsSection section { get; set; }
-  }
-
-  public class JsonIMDBAwardsSection
-  {
-    public int listItemType { get; set; }
-    public List<JsonIMDBAwardsSectionItem> items { get; set; }
-    public int total { get; set; }
-    public string endCursor { get; set; }
-  }
-
-  public class JsonIMDBAwardsSectionItem
-  {
-    public string id { get; set; }
-    public List<JsonIMDBAwardsListContent> listContent { get; set; }
-    public string rowTitle { get; set; }
-    public string rowSubTitle { get; set; }
-    public string rowLink { get; set; }
-    public List<JsonIMDBAwardsSubListContent> subListContent { get; set; }
-  }
-
-  public class JsonIMDBAwardsListContent
-  {
-    public string className { get; set; }
-    public string text { get; set; }
-  }
-
-  public class JsonIMDBAwardsSubListContent
-  {
-    public string text { get; set; }
-    public string subText { get; set; }
-    public string href { get; set; }
-  }
-
-  // IMDB Casts
-  public class JsonIMDBCasts
-  {
-    public JsonIMDBCastProps props { get; set; }
-  }
-
-  public class JsonIMDBCastProps
-  {
-    public JsonIMDBCastPageProps pageProps { get; set; }
-  }
-
-  public class JsonIMDBCastPageProps
-  {
-    public string tconst { get; set; }
-    public JsonIMDBCastMainColumnData mainColumnData { get; set; }
-  }
-  
-  public class JsonIMDBCastMainColumnData
-  {
-    public string id { get; set; }
-    public JsonIMDBCastText titleText { get; set; }
-    public JsonIMDBCastText originalTitleText { get; set; }
-    public JsonIMDBCastPlot plot { get; set; }
-    public JsonIMDBCastReleaseDate releaseDate { get; set; }
-    public List<JsonIMDBCastCreditCategory> creditCategories { get; set; }
-    public JsonIMDBCastTaglines taglines { get; set; }
-  }
-
-  public class JsonIMDBCastText
-  {
-    public string text { get; set; }
-  }
-  
-  public class JsonIMDBCastPlotText
-  {
-    public string plainText { get; set; }
-  }
-
-  public class JsonIMDBCastPlot
-  {
-    public JsonIMDBCastPlotText plotText { get; set; }
-  }
-
-  public class JsonIMDBCastReleaseDate
-  {
-    public int day { get; set; }
-    public int month { get; set; }
-    public int year { get; set; }
-    public JsonIMDBCastText country { get; set; }
-  }
-  
-  public class JsonIMDBCastTaglines
-  {
-    public List<JsonIMDBCastEdge> edges { get; set; }
-    public int total { get; set; }
-  }
-
- 
-  public class JsonIMDBCastCreditCategory
-  {
-    public JsonIMDBCastCategory category { get; set; }
-    public JsonIMDBCastCredits credits { get; set; }
-  }
-
-  public class JsonIMDBCastCategory
-  {
-    public string id { get; set; }
-  }
-
-
-  public class JsonIMDBCastCredits
-  {
-    public int total { get; set; }
-    public List<JsonIMDBCastEdge> edges { get; set; }
-  }
-
-  public class JsonIMDBCastEdge
-  {
-    public JsonIMDBCastNode node { get; set; }
-  }
-
-  public class JsonIMDBCastNode
-  {
-    public JsonIMDBCastName name { get; set; }
-    public List<JsonIMDBCastCharacter> characters { get; set; }
-    public string text { get; set; }
-  }
-
-  public class JsonIMDBCastName
-  {
-    public string id { get; set; }
-    public JsonIMDBCastText nameText { get; set; }
-    public JsonIMDBCastPrimaryImage primaryImage { get; set; }
-  }
-
-  public class JsonIMDBCastPrimaryImage
-  {
-    public string url { get; set; }
-  }
-
-  public class JsonIMDBCastCharacter
-  {
-    public string name { get; set; }
-  }
+  #region IMDB Details
 
   public IMDBActor GetIMDBActorDetails(string imdbID, string page)
   {
@@ -1617,34 +1227,39 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       return oReturn;
     }
 
-    string regex = @"type=.application\/(ld\+)?json.>(?<json>{.+?})<";
-    string json = Regex.Match(page, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
-    if (string.IsNullOrEmpty(json))
-    {
-      Log.Debug("GetIMDBActorDetails IMDB = {0}, JSON not found.", imdbID);
-      return oReturn;
-    }
-
     try
     {
-      JsonIMDBActor Actor = JsonConvert.DeserializeObject<JsonIMDBActor>(json);
+      NamesDetails Actor = JsonConvert.DeserializeObject<NamesDetails>(json);
       if (Actor == null)
       {
         Log.Debug("GetIMDBActorDetails IMDB = {0}, JSON changed!?.", imdbID);
         return oReturn;
       }
 
-      if (!string.IsNullOrEmpty(Actor.name))
+      if (!string.IsNullOrEmpty(Actor.displayName))
       {
-        Log.Debug("IMDB {0}: {1}", "Name", Actor.name);
+        Log.Debug("IMDB {0}: {1}", "Name", Actor.displayName);
       }
 
-      oReturn.Name = Actor.name;
+      oReturn.Name = Actor.displayName;
       oReturn.IMDBActorID = imdbID;
-      oReturn.MiniBiography = Actor.description;
-      oReturn.ThumbnailUrl = string.IsNullOrEmpty(Actor.image) ? string.Empty : Actor.image.Replace("_V1_","_V1_UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution));
-      oReturn.DateOfBirth = Actor.birthDate;
-      oReturn.DateOfDeath = Actor.deathDate;
+      oReturn.MiniBiography = Actor.biography;
+      if (Actor.primaryImage != null && Actor.primaryImage.url != null && !string.IsNullOrEmpty(Actor.primaryImage.url))
+      {
+        oReturn.ThumbnailUrl = Actor.primaryImage.url.Replace("_V1_","_V1_UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution));
+      }
+      else
+      {
+        oReturn.ThumbnailUrl = string.Empty;
+      }
+      if (Actor.birthDate != null)
+      {
+        oReturn.DateOfBirth = string.Format({0}-{1:D2}-{2:D2}", Actor.birthDate.year, Actor.birthDate.month, Actor.birthDate.day);
+      }
+      if (Actor.birthDate != null)
+      {
+        oReturn.DateOfDeath = string.Format({0}-{1:D2}-{2:D2}", Actor.deathDate.year, Actor.deathDate.month, Actor.deathDate.day);
+      }
     }
     catch (Exception ex)
     {
@@ -1660,15 +1275,10 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     TMDBMovie oReturn = new TMDBMovie();
 
-    if (string.IsNullOrEmpty(_strBody))
-    {
-      string uri;
-      string strUrl = String.Format("https://m.imdb.com/title/{0}/", imdbID);
-      _strBody = GetPage(strUrl, "utf-8", out uri);
-    }
+    string uri;
+    string strUrl = String.Format("https://api.imdbapi.dev/titles/{0}", imdbID);
+    string json = GetPage(strUrl, "utf-8", out uri);
 
-    string regex = @"type=.application\/(ld\+)?json.>(?<json>{.+?})<";
-    string json = Regex.Match(_strBody, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
     if (string.IsNullOrEmpty(json))
     {
       Log.Debug("GetIMDBDetails IMDB = {0}, JSON not found.", imdbID);
@@ -1677,89 +1287,98 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     try
     {
-      JsonIMDBMovie Movie = JsonConvert.DeserializeObject<JsonIMDBMovie>(json);
+      TitlessDetails Movie = JsonConvert.DeserializeObject<TitlessDetails>(json);
       if (Movie == null)
       {
         Log.Debug("GetIMDBDetails IMDB = {0}, JSON changed!?.", imdbID);
         return oReturn;
       }
 
-      if (!string.IsNullOrEmpty(Movie.name))
+      if (!string.IsNullOrEmpty(Movie.primaryTitle))
       {
-        Log.Debug("IMDB {0}: {1}", "Title", Movie.name);
+        Log.Debug("IMDB {0}: {1}", "Title", Movie.primaryTitle);
       }
-      oReturn.Title = Movie.name;
-      oReturn.IMDBNumber = imdbID;
-      oReturn.Plot = Movie.description;
-      oReturn.ThumbURL = string.IsNullOrEmpty(Movie.image) ? string.Empty : Movie.image.Replace("_V1_","_V1_UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution));
-
-      if (!string.IsNullOrEmpty(Movie.duration))
+      oReturn.Title = Movie.primaryTitle;
+      oReturn.IMDBNumber = Movie.id;
+      oReturn.Plot = Movie.plot;
+      if (Movie.primaryImage != null && Movie.primaryImage.url != null && !string.IsNullOrEmpty(Movie.primaryImage.url))
       {
-        regex = @"PT(?:(?<hour>\d*)H)?(?<minutes>\d+?)M";
-        string hour = Regex.Match(Movie.duration, regex).Groups["hour"].Value;
-        string minutes = Regex.Match(Movie.duration, regex).Groups["minutes"].Value;
-        if (string.IsNullOrEmpty(hour))
-        {
-          hour = "0";
-        }
-        if (string.IsNullOrEmpty(minutes))
-        {
-          minutes = "0";
-        }
-        oReturn.RunTime = Int32.Parse(hour) * 60 + Int32.Parse(minutes);
+        oReturn.ThumbURL = Movie.primaryImage.url.Replace("_V1_","_V1_UX" + Convert.ToString((int)Thumbs.ThumbLargeResolution));
+      }
+      else
+      {
+        oReturn.ThumbURL = string.Empty;
+      }
+
+      if (Movie.runtimeSeconds != null)
+      {
+        oReturn.RunTime = Movie.runtimeSeconds / 60;
       }
 
       oReturn.Genre = string.Empty;
-      if (Movie.genre != null && Movie.genre.Count > 0)
+      if (Movie.interests != null && Movie.interests.Count > 0) 
       {
-        foreach (string g in Movie.genre)
+        foreach (Interest g in Movie.interests)
         {
-          oReturn.Genre += (!string.IsNullOrEmpty(oReturn.Genre) ? " / " : string.Empty) + g;
+          if (!g.isSubgenre)
+          {
+            oReturn.Genre += (!string.IsNullOrEmpty(oReturn.Genre) ? " / " : string.Empty) + g.name;
+          }
         }
+      }
+    }
+    catch (Exception ex)
+    {
+      Log.Debug("GetIMDBDetails IMDB = {0}, Exception {1}, JSON changed!?.", imdbID, ex.Message);
+    }
+
+    strUrl = String.Format("https://api.imdbapi.dev/titles/{0}/credits", imdbID);
+    string json = GetPages(strUrl, "utf-8", out uri);
+
+    if (string.IsNullOrEmpty(json))
+    {
+      Log.Debug("GetIMDBDetails IMDB = {0}, JSON not found.", imdbID);
+      return oReturn;
+    }
+
+    try
+    {
+      TitleCredits Credits = JsonConvert.DeserializeObject<TitleCredits>(json);
+      if (Credits == null)
+      {
+        Log.Debug("GetIMDBDetails IMDB = {0}, JSON changed!?.", imdbID);
+        return oReturn;
       }
 
       List<TMDBPerson> tReturn = new List<TMDBPerson>();
       string sCast = string.Empty;
 
-      if (Movie.actor != null && Movie.actor.Count > 0)
+      if (Credits.credits != null && Credits.credits.Count > 0)
       {
-        foreach (JsonIMDBPerson cast in Movie.actor)
+        foreach (Credit cast in Credits.credits)
         {
-          if (cast.type == "Person")
+          if (cast.category == "director")
           {
             TMDBPerson aPerson = new TMDBPerson();
-            aPerson.Id = cast.url;
-            aPerson.Name = cast.name;
+            aPerson.Id = cast.name.id;
+            aPerson.Name = cast.name.displayName;
+            aPerson.As = "Director";
             tReturn.Add(aPerson);
-          }
-        }
-      }
-
-      if (Movie.creator != null && Movie.creator.Count > 0)
-      {
-        foreach (JsonIMDBPerson creator in Movie.creator)
-        {
-          if (creator.type == "Person")
+          } 
+          else if (cast.category == "writer")
           {
             TMDBPerson aPerson = new TMDBPerson();
-            aPerson.Id = creator.url;
-            aPerson.Name = creator.name;
+            aPerson.Id = cast.name.id;
+            aPerson.Name = cast.name.displayName;
             aPerson.As = "Writer";
             tReturn.Add(aPerson);
           }
-        }
-      }
-
-      if (Movie.director  != null)
-      {
-        foreach (JsonIMDBPerson director in Movie.director)
-        {
-          if (director.type == "Person")
+          else
           {
             TMDBPerson aPerson = new TMDBPerson();
-            aPerson.Id = director.url;
-            aPerson.Name = director.name;
-            aPerson.As = "Director ";
+            aPerson.Id = cast.name.id;
+            aPerson.Name = cast.name.displayName;
+            aPerson.As = cast.characters?.FirstOrDefault() ?? string.Empty;
             tReturn.Add(aPerson);
           }
         }
@@ -1912,6 +1531,128 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       Log.Error("{0} GetIMDBAwards error: {1}", "GetActorDetails", ex.Message);
     }
     return string.Empty;
+  }
+
+  #endregion
+
+  #region IMDB API
+
+  public class IMDBDate
+  {
+    public int year { get; set; }
+    public int month { get; set; }
+    public int day { get; set; }
+  }
+
+  public class MeterRanking
+  {
+    public int currentRank { get; set; }
+    public string changeDirection { get; set; }
+    public int difference { get; set; }
+  }
+
+  public class PrimaryImage
+  {
+    public string url { get; set; }
+    public int width { get; set; }
+    public int height { get; set; }
+    public string type { get; set; }
+  }
+
+  public class Interest // Genres
+  {
+    public string id { get; set; }
+    public string name { get; set; }
+    public PrimaryImage primaryImage { get; set; }
+    public string description { get; set; }
+    public bool isSubgenre { get; set; }
+    // public List<SimilarInterest> similarInterests { get; set; }
+  }
+
+  public class Metacritic
+  {
+    public string url { get; set; }
+    public int score { get; set; }
+    public int reviewCount { get; set; }
+  }
+
+  public class SpokenLanguage
+  {
+    public string code { get; set; }
+    public string name { get; set; }
+  }
+
+  public class OriginCountry
+  {
+    public string code { get; set; }
+    public string name { get; set; }
+  }
+
+  public class Rating
+  {
+    public int aggregateRating { get; set; }
+    public int voteCount { get; set; }
+  }
+
+  // Names
+  // https://api.imdbapi.dev/names/nm0000116
+  public class NamesDetails
+  {
+    public string id { get; set; }
+    public string displayName { get; set; }
+    public List<string> alternativeNames { get; set; }
+    public PrimaryImage primaryImage { get; set; }
+    public List<string> primaryProfessions { get; set; }
+    public string biography { get; set; }
+    public int heightCm { get; set; }
+    public string birthName { get; set; }
+    public IMDBDate birthDate { get; set; }
+    public string birthLocation { get; set; }
+    public IMDBDate deathDate { get; set; }
+    public string deathLocation { get; set; }
+    public string deathReason { get; set; }
+    public MeterRanking meterRanking { get; set; }
+  }
+
+  // Titles
+  // https://api.imdbapi.dev/titles/tt1532503
+  public class TitlessDetails
+  {
+    public string id { get; set; }
+    public string type { get; set; }
+    public bool isAdult { get; set; }
+    public string primaryTitle { get; set; }
+    public string originalTitle { get; set; }
+    public PrimaryImage primaryImage { get; set; }
+    public int startYear { get; set; }
+    public int endYear { get; set; }
+    public int runtimeSeconds { get; set; }
+    public List<string> genres { get; set; }
+    public Rating rating { get; set; }
+    public Metacritic metacritic { get; set; }
+    public string plot { get; set; }
+    public List<NamesDetails> directors { get; set; }
+    public List<NamesDetails> writers { get; set; }
+    public List<NamesDetails> stars { get; set; }
+    public List<OriginCountry> originCountries { get; set; }
+    public List<SpokenLanguage> spokenLanguages { get; set; }
+    public List<Interest> interests { get; set; }
+  }
+
+  // Title Credits
+  // https://api.imdbapi.dev/titles/tt1532503/credits
+  public class Credit
+  {
+    public NamesDetails name { get; set; }
+    public string category { get; set; }
+    public List<string> characters { get; set; }
+  }
+
+  public class TitleCredits
+  {
+    public List<Credit> credits { get; set; }
+    public int totalCount { get; set; }
+    public string nextPageToken { get; set; }
   }
 
   #endregion
@@ -2647,35 +2388,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     return string.Empty;
   }
 
-  private ArrayList Parse(string input, string pattern) 
-  {
-    ArrayList keyedMatches  = new ArrayList();
-    try 
-    {
-      Regex regEx             = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-      MatchCollection matches = regEx.Matches(input);
-      
-      // write matches and groups to variables
-      foreach (Match currMatch in matches) 
-      {
-        // store the groups in the match
-        if (currMatch.Groups.Count > 1) 
-        {
-          Hashtable groupings = new Hashtable( );
-          for (int i = 1; i < currMatch.Groups.Count; i++)
-              groupings.Add(regEx.GroupNameFromNumber(i), currMatch.Groups[i].Value.Trim());
-          keyedMatches.Add(groupings);
-        }
-      }
-    }
-    catch (Exception e) 
-    {
-      Log.Error("InternalActorsScriptGrabber Parse: Regex expression failed! Exception: {0}", e.Message);
-      Log.Error(e);
-    }
-    return keyedMatches;
-  }
-
   private static string GUILocalizeDirector()
   {
     string Director = string.Empty;
@@ -2833,5 +2545,43 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       IMDBPageCache.Add(strUrl, strBody);
     }
     return strBody;
+  }
+
+  public string GetPages(string strUrl, string strEncode, out string absoluteUri, bool cache = false)
+  {
+    JObject mainResult = null;
+    string currentPage = strUrl;
+
+    while (true)
+    {
+      string json = GetPages(strUrl, strEncode, out absoluteUri, cache);
+      if (string.IsNullOrWhiteSpace(json))
+      {
+        break;
+      }
+
+      JObject pageData = JObject.Parse(json);
+      if (mainResult == null)
+      {
+        mainResult = pageData;
+      }
+      else
+      {
+        var arrayProperty = pageData.Properties().FirstOrDefault(p => p.Value.Type == JTokenType.Array);
+        if (arrayProperty != null)
+        {
+          var mainArray = mainResult[arrayProperty.Name] as JArray;
+          mainArray?.Merge(arrayProperty.Value);
+        }
+        mainResult["nextPageToken"] = pageData["nextPageToken"];
+      }
+      if (pageData["nextPageToken"] == null)
+      {
+        break;
+      }
+      currentPage = string.Format("{0}&pageToken={1}", strUrl, pageData["nextPageToken"].ToString());
+    }
+
+    return mainResult?.ToString();
   }
 }
