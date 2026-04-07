@@ -1470,7 +1470,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
   public const string API_Casts = API_BaseUrl + "movie/{0}/casts?api_key={1}";
   public const string API_ReleaseInfo = API_BaseUrl + "movie/{0}/releases?api_key={1}";
   public const string API_SearchPersons = API_BaseUrl + "person?query={0}&api_key={1}";
-  public const string API_Person_eIDs = API_BaseURL + "person/{0}/external_ids?api_key={1}";
+  public const string API_Person_eIDs = API_BaseUrl + "person/{0}/external_ids?api_key={1}";
 
   private static Dictionary<string, string> Alphabet = new Dictionary<string, string>()
   {
