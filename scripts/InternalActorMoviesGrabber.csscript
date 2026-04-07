@@ -646,7 +646,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     string json = GetPages(actorUrl, "utf-8", out uri);
     if (string.IsNullOrEmpty(json))
     {
-      Log.Debug("GetActorMovies IMDB = {0}, JSON not found.", imdbActor.IMDBActorID);
+      Log.Debug("GetActorMovies: IMDB = {0}, JSON not found.", imdbActor.IMDBActorID);
       return;
     }
 
@@ -655,7 +655,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       IMDBFilmography Movies = JsonConvert.DeserializeObject<IMDBFilmography>(json);
       if (Movies == null || Movies.credits == null)
       {
-        Log.Debug("GetActorMovies IMDB = {0}, JSON changed!?.", imdbActor.IMDBActorID);
+        Log.Debug("GetActorMovies: IMDB = {0}, JSON changed!?.", imdbActor.IMDBActorID);
         return;
       }
 
