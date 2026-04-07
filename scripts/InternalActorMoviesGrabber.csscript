@@ -1366,7 +1366,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
   public class IMDBRating
   {
-    public int aggregateRating { get; set; }
+    public float aggregateRating { get; set; }
     public int voteCount { get; set; }
   }
 
@@ -2324,12 +2324,16 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       var response = webEx.Response as HttpWebResponse;
       if (response != null && (int)response.StatusCode == 429 && retryCount < 3)
       {
-          string retryAfter = response.Headers["Retry-After"];
           int sleepMs = (retryCount + 1) * 5000;
-          int seconds = sleepMs / 1000;
+
+          string retryAfter = response.Headers["Retry-After"];
+          int seconds = 0;
           if (!string.IsNullOrEmpty(retryAfter) && int.TryParse(retryAfter, out seconds))
           {
-            sleepMs = seconds * 1000;
+            if (seconds > 0)
+            {
+              sleepMs = seconds * 1000;
+            }
           }
           Log.Warn("InternalActorsScriptGrabber - 429 Too Many Requests. Attempt: {0}. Wait {1}ms...", retryCount + 1, sleepMs);
           System.Threading.Thread.Sleep(sleepMs);
