@@ -85,7 +85,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
         Log.Debug("GetIMDBImages v{0} IMDB = {1}, JSON changed!?.", strGrabberVersion, imdbID);
         return imdbImages;
       }
-      if (Images.image.Count == 0)
+      if (Images.images.Count == 0)
       {
         return imdbImages;
       }
