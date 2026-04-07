@@ -402,6 +402,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     try
     {
+      json = json.Replace("results", "person_results");
       FindObject Person = JsonConvert.DeserializeObject<FindObject>(json);
       if (Person != null & Person.person_results != null && Person.person_results.Count > 0)
       {
@@ -436,6 +437,10 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
             elements.Add(newUrl);
           }
         }
+      }
+      else
+      {
+        Log.Debug("FindIMDBActor: Actor not found: {0}", dbActor);
       }
     }
     catch (Exception ex)
