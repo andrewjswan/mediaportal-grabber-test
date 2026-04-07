@@ -601,8 +601,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       {
         actor.Biography = tmdbActor.MiniBiography;
       }
-      Log.Debug("*** IMDB Mini Bio: {0}", actor.MiniBiography.Replace("\n", " "));
-      Log.Debug("*** IMDB Full Bio: {0}", actor.Biography.Replace("\n", " "));
 
       // IMDB Awards
       string imdbAwards = GetAwardsIMDB(actor.IMDBActorID);
@@ -618,8 +616,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       #region Get movies for every role
 
       // Get filmography Director
-      (actor);
-
+      GetActorMovies(actor);
       if (actor.Count == 0)
       {
          Log.Error("InternalActorsGrabber - GetActorDetails - {0} | Strange person, perhaps the IMDB markup has changed.", url.URL);
