@@ -55,12 +55,12 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     string thumb = string.Empty;
 
     string uri;
-    string strUrl = String.Format("https://api.imdbapi.dev/titles/{0}", imdbID);
+    string strUrl = String.Format("https://api.imdbapi.dev/titles/{0}", imdbId);
     string json = GetPage(strUrl, "utf-8", out uri);
 
     if (string.IsNullOrEmpty(json))
     {
-      Log.Debug("GetThumbImdb IMDB = {0}, JSON not found.", imdbID);
+      Log.Debug("GetThumbImdb IMDB = {0}, JSON not found.", imdbId);
       return thumb;
     }
 
@@ -69,7 +69,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       IMDBMovieDetails Movie = JsonConvert.DeserializeObject<IMDBMovieDetails>(json);
       if (Movie == null)
       {
-        Log.Debug("GetThumbImdb IMDB = {0}, JSON changed!?.", imdbID);
+        Log.Debug("GetThumbImdb IMDB = {0}, JSON changed!?.", imdbId);
         return thumb;
       }
 
@@ -80,7 +80,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     }
     catch (Exception ex)
     {
-      Log.Debug("GetThumbImdb IMDB = {0}, Exception {1}, JSON changed!?.", imdbID, ex.Message);
+      Log.Debug("GetThumbImdb IMDB = {0}, Exception {1}, JSON changed!?.", imdbId, ex.Message);
     }
     return thumb;
   }
@@ -397,7 +397,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     if (string.IsNullOrEmpty(json))
     {
-      return false;
+      return elements;
     }
 
     try
@@ -408,7 +408,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         foreach (PersonFind person in Person.person_results)
         {
           URL = string.Format(API_DetailsPerson, person.id, API_KEY);
-          json = GetPage(URL, "utf-8", out uri);
+          json = GetPage(URL, "utf-8", out absoluteUri);
           if (string.IsNullOrEmpty(json))
           {
             continue;
@@ -417,7 +417,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
           ActorDetails Actor = JsonConvert.DeserializeObject<ActorDetails>(json);
           if (Actor != null && !string.IsNullOrEmpty(Actor.name))
           {
-            actor.Name = Actor.name;
             Log.Debug("FindIMDBActor: IMDB: {0} TMDB: {1} - {2}", Actor.imdb_id, Actor.id, Actor.name);
 
             string url = string.Format(@"https://www.imdb.com/name/{0}/", Actor.imdb_id);
@@ -476,8 +475,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       string absoluteUri;
       string html = GetPage(url.URL, "utf-8", out absoluteUri);
-      string regex;
-
       if (string.IsNullOrEmpty(html))
       {
         return false;
@@ -1089,7 +1086,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       }
       else if (Movie.genres != null && Movie.genres.Count > 0)
       {
-        foreach (string g in Movie.interests)
+        foreach (string g in Movie.genres)
         {
           oReturn.Genre += (!string.IsNullOrEmpty(oReturn.Genre) ? " / " : string.Empty) + g;
         }
