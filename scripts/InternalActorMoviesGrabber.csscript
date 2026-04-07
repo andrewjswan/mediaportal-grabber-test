@@ -642,7 +642,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
   private void GetActorMovies(IMDBActor imdbActor)
   {
     string uri;
-    string actorUrl = string.Format("https://api.imdbapi.dev/names/{0}/filmography", imdbActor.IMDBActorID);
+    string actorUrl = string.Format("https://api.imdbapi.dev/names/{0}/filmography?pageSize=50", imdbActor.IMDBActorID);
     string json = GetPages(actorUrl, "utf-8", out uri);
     if (string.IsNullOrEmpty(json))
     {
@@ -882,7 +882,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     ArrayList actorList = new ArrayList();
 
     string uri;
-    string strUrl = String.Format("https://api.imdbapi.dev/titles/{0}/credits", imdbMovieID);
+    string strUrl = String.Format("https://api.imdbapi.dev/titles/{0}/credits?pageSize=50", imdbMovieID);
     string json = GetPages(strUrl, "utf-8", out uri);
     if (string.IsNullOrEmpty(json))
     {
@@ -1092,7 +1092,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       Log.Debug("GetIMDBDetails IMDB = {0}, Exception {1}, JSON changed!?.", imdbID, ex.Message);
     }
 
-    strUrl = String.Format("https://api.imdbapi.dev/titles/{0}/credits", imdbID);
+    strUrl = String.Format("https://api.imdbapi.dev/titles/{0}/credits?pageSize=50", imdbID);
     json = GetPages(strUrl, "utf-8", out uri);
 
     if (string.IsNullOrEmpty(json))
@@ -1462,7 +1462,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
   public const string API_MovieInfo = API_BaseUrl + "movie/{0}?api_key={1}";
   public const string API_Casts = API_BaseUrl + "movie/{0}/casts?api_key={1}";
   public const string API_ReleaseInfo = API_BaseUrl + "movie/{0}/releases?api_key={1}";
-  public const string API_SearchPersons = API_BaseUrl + "person?query={0}&api_key={1}";
+  public const string API_SearchPersons = API_BaseUrl + "search/person?query={0}&api_key={1}";
   public const string API_Person_eIDs = API_BaseUrl + "person/{0}/external_ids?api_key={1}";
 
   private static Dictionary<string, string> Alphabet = new Dictionary<string, string>()
@@ -2359,7 +2359,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     return strBody;
   }
 
-  public string GetPages(string strUrl, string strEncode, out string absoluteUri, bool cache = false)
+  public string GetPages(string strUrl, string strEncode, out string absoluteUri, bool cache = true)
   {
     JObject mainResult = null;
     string currentPage = strUrl;
