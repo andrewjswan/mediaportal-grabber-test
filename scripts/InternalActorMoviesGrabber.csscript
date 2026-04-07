@@ -618,7 +618,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       #region Get movies for every role
 
       // Get filmography Director
-      GetActorMovies(actor);
+      (actor);
 
       if (actor.Count == 0)
       {
@@ -642,14 +642,14 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     return false;
   }
 
-  private void GetActorMovies(IMDBActor imdbActor)
+  private void (IMDBActor imdbActor)
   {
     string uri;
     string actorUrl = string.Format("https://api.imdbapi.dev/names/{0}/filmography", imdbActor.IMDBActorID);
     string json = GetPages(actorUrl, "utf-8", out uri);
     if (string.IsNullOrEmpty(json))
     {
-      Log.Debug("GetActorMovies IMDB = {0}, JSON not found.", imdbActor.IMDBActorID);
+      Log.Debug(" IMDB = {0}, JSON not found.", imdbActor.IMDBActorID);
       return;
     }
 
@@ -658,7 +658,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
       IMDBFilmography Movies = JsonConvert.DeserializeObject<IMDBFilmography>(json);
       if (Movies == null || Movies.credits == null)
       {
-        Log.Debug("GetActorMovies IMDB = {0}, JSON changed!?.", imdbActor.IMDBActorID);
+        Log.Debug(" IMDB = {0}, JSON changed!?.", imdbActor.IMDBActorID);
         // Log.Debug("{0}", json);
         return;
       }
@@ -680,7 +680,6 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
         string imdbID = !string.IsNullOrEmpty(item.title.id) ? item.title.id : string.Empty;
         string title = !string.IsNullOrEmpty(item.title.primaryTitle) ? item.title.primaryTitle : (!string.IsNullOrEmpty(item.title.originalTitle) ? item.title.originalTitle : string.Empty);
-        string strYear = item.title.startYear > 0 ? item.title.startYear.ToString() : string.Empty;
         string role = string.Empty;
         if (item.category != null)
         {
@@ -724,16 +723,15 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
             }
           }
         }
-        // Log.Debug("GetActorMovies: Found for {0}: {1} | {2} ({3}) | {4}", imdbActor.IMDBActorID, imdbID, title, strYear, role);
+        // Log.Debug("GetActorMovies: Found for {0}: {1} | {2} ({3}) | {4}", imdbActor.IMDBActorID, imdbID, title, item.title.startYear, role);
 
         if (!string.IsNullOrEmpty(title))
         {
           // Year
-          int year = 0;
           // Set near future for movies without year (99% it's a future project)
-          if (string.IsNullOrEmpty(strYear))
+          if (item.title.startYear == 0)
           {
-            year = DateTime.Today.Year + 5;
+            item.title.startYear = DateTime.Today.Year + 5;
           }
 
           // Actor
@@ -741,7 +739,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
           actorMovie.MovieTitle = title;
           actorMovie.Role = role;
-          actorMovie.Year = year;
+          actorMovie.Year = item.title.startYear;
           actorMovie.MovieImdbID = imdbID;
 
           // Check if director/writer/self movie exists in actors movies, append role
@@ -764,7 +762,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
           if (!skip)
           {
             imdbActor.Add(actorMovie);
-            Log.Debug("GetActorMovies: Added for {0}: {1} | {2} ({3}) | {4}", imdbActor.IMDBActorID, imdbID, title, year, role);
+            Log.Debug("GetActorMovies: Added for {0}: {1} | {2} ({3}) | {4}", imdbActor.IMDBActorID, imdbID, title, item.title.startYear, role);
           }
         }
       }
