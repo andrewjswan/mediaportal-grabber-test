@@ -2265,7 +2265,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       if (IMDBPageCache.Contains(strUrl))
       {
-        Log.Debug("InternalActorsScriptGrabber - GetPage from Cache: {0}", HideAPIKey(strUrl));
+        Log.Debug("InternalActorsScriptGrabber - GetPage: From Cache: {0}", HideAPIKey(strUrl));
         return (string)IMDBPageCache[strUrl];
       }
     }
@@ -2353,7 +2353,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     if (cache && !string.IsNullOrEmpty(strBody))
     {
-      Log.Debug("InternalActorsScriptGrabber - GetPage put Page to Cache: {0}", HideAPIKey(strUrl));
+      Log.Debug("InternalActorsScriptGrabber - GetPage: Page to Cache: {0}", HideAPIKey(strUrl));
       IMDBPageCache.Add(strUrl, strBody);
     }
     return strBody;
