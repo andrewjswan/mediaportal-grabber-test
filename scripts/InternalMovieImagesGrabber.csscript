@@ -560,13 +560,34 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     return url.Replace(API_KEY, "<APIKEY>");
   }
 
-  // Get HTML Page
-  private string GetPage(string strUrl, string strEncode, out string absoluteUri, int retryCount = 0)
+  private static Hashtable IMDBPageCache;
+
+  private static void ClearPageCache()
   {
-    Log.Debug("InternalMovieImagesGrabber v{0} GetPage: {1} (Attempt: {2})", strGrabberVersion, HideAPIKey(strURL), retryCount + 1);
+    IMDBPageCache = new Hashtable();
+  }
+
+  // Get HTML Page
+  private string GetPage(string strUrl, string strEncode, out string absoluteUri, bool cache = false, int retryCount = 0)
+  {
+    Log.Debug("InternalMovieImagesGrabber - GetPage: {0} (Attempt: {1})", HideAPIKey(strUrl), retryCount + 1);
 
     string strBody = string.Empty;
     absoluteUri = string.Empty;
+
+    if (cache)
+    {
+      if (IMDBPageCache == null)
+      {
+        IMDBPageCache = new Hashtable();
+      }
+
+      if (IMDBPageCache.Contains(strUrl))
+      {
+        Log.Debug("InternalMovieImagesGrabber - GetPage: From Cache: {0}", HideAPIKey(strUrl));
+        return (string)IMDBPageCache[strUrl];
+      }
+    }
 
     HttpWebRequest req = null;
     try
@@ -631,7 +652,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
           Log.Debug("InternalMovieImagesGrabber - 429 Too Many Requests. Attempt: {0}. Wait {1}ms...", retryCount + 1, sleepMs);
           System.Threading.Thread.Sleep(sleepMs);
           
-          return GetPage(strUrl, strEncode, out absoluteUri, retryCount + 1);
+          return GetPage(strUrl, strEncode, out absoluteUri, cache, retryCount + 1);
       }
       Log.Error("InternalMovieImagesGrabber - GetPage: WebException: {0} err:{1}", HideAPIKey(strUrl), webEx.Message);
     }
@@ -647,6 +668,12 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     if (string.IsNullOrEmpty(strBody))
     {
       Log.Debug("InternalMovieImagesGrabber - GetPage empty response for: {0}", HideAPIKey(strUrl));
+    }
+
+    if (cache && !string.IsNullOrEmpty(strBody))
+    {
+      Log.Debug("InternalMovieImagesGrabber - GetPage: Page to Cache: {0}", HideAPIKey(strUrl));
+      IMDBPageCache.Add(strUrl, strBody);
     }
     return strBody;
   }
