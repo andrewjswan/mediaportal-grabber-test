@@ -274,6 +274,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
   public const string API_SearchMovie = API_BaseUrl + "search/movie";
   public const string API_SearchPerson = API_BaseUrl + "search/person";
   public const string API_MovieImages = API_BaseUrl + "movie/{0}/images";
+  public const string API_SearchPersonID = API_BaseUrl + "find/{0}?external_source=imdb_id";
 
   private static string MakeTMDBUrl(string url, string what, string query = null, string lang = "en", int year = 0)
   {
@@ -536,6 +537,12 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     ArrayList actorThumbs = new ArrayList();
 
     string defaultPosterPageLinkUrl = MakeTMDBUrl(API_SearchPerson, string.Empty, actorName);
+    Regex rximdbid = new Regex(@"(?<imdbid>nm\d{7,8})");
+    Match matchimdbid = rximdbid.Match(actorName);
+    if (matchimdbid.Success)
+    {
+      defaultPosterPageLinkUrl = MakeTMDBUrl(API_SearchPersonID, string.Empty, actorName);
+    }
     strXml = GetPage(defaultPosterPageLinkUrl, "utf-8", out uri);
 
     MatchCollection actorImages = Regex.Matches(strXml, @"""profile_path"":""/(?<cover>.*?jpg)""");
