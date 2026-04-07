@@ -393,7 +393,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
     string absoluteUri;
     string URL = string.Format(API_SearchPersons, dbActor, API_KEY);
-    string json = GetPage(strURL, "utf-8", out absoluteUri);
+    string json = GetPage(URL, "utf-8", out absoluteUri);
 
     if (string.IsNullOrEmpty(json))
     {
@@ -658,11 +658,11 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
         Log.Debug("GetActorMovies: IMDB = {0}, JSON changed!?.", imdbActor.IMDBActorID);
         return;
       }
-
       if (Movies.credits.Count == 0)
       {
         return;
       }
+      Log.Debug("GetActorMovies: IMDB = {0}, Movies credits: {1}", imdbActor.IMDBActorID, Movies.credits);
 
       foreach (IMDBMovies item in Movies.credits)
       {
@@ -901,6 +901,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       if (MovieCast.credits != null && MovieCast.credits.Count > 0)
       {
+        Log.Debug("GetIMDBMovieActorsList: IMDB = {0}, Movies Cast credits: {1}", imdbMovieID, MovieCast.credits.Count);
         foreach (IMDBActors cast in MovieCast.credits)
         {
           if (cast.category == "director")
@@ -1114,6 +1115,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 
       if (MovieCast.credits != null && MovieCast.credits.Count > 0)
       {
+        Log.Debug("GetIMDBDetails: IMDB = {0}, Movies Cast credits: {1}", imdbID, MovieCast.credits.Count);
         foreach (IMDBActors cast in MovieCast.credits)
         {
           if (cast.category == "director")
