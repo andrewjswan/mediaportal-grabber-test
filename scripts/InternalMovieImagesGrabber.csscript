@@ -650,7 +650,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     return strBody;
   }
 
-  public string GetPages(string strUrl, string strEncode, out string absoluteUri, bool cache = false)
+  public string GetPages(string strUrl, string strEncode, out string absoluteUri, bool cache = true)
   {
     JObject mainResult = null;
     string currentPage = strUrl;
