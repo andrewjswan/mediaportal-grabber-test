@@ -274,7 +274,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
   public const string API_SearchMovie = API_BaseUrl + "search/movie";
   public const string API_SearchPerson = API_BaseUrl + "search/person";
   public const string API_MovieImages = API_BaseUrl + "movie/{0}/images";
-  public const string API_SearchPersonID = API_BaseUrl + "find/{0}?external_source=imdb_id";
+  public const string API_SearchPersonID = API_BaseUrl + "find/{0}";
 
   private static string MakeTMDBUrl(string url, string what, string query = null, string lang = "en", int year = 0)
   {
@@ -541,7 +541,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     Match matchimdbid = rximdbid.Match(actorName);
     if (matchimdbid.Success)
     {
-      defaultPosterPageLinkUrl = MakeTMDBUrl(API_SearchPersonID, string.Empty, actorName);
+      defaultPosterPageLinkUrl = MakeTMDBUrl(API_SearchPersonID, actorName) + "&external_source=imdb_id";
     }
     strXml = GetPage(defaultPosterPageLinkUrl, "utf-8", out uri);
 
