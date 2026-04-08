@@ -11,6 +11,7 @@ using MediaPortal.Util;
 using MediaPortal.Video.Database;
 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 using System;
 using System.Collections;
@@ -25,7 +26,7 @@ using System.Web;
 internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 {
   const string strGrabber = "TI_MDB";
-  const string strGrabberVersion = "20250719.I";
+  const string strGrabberVersion = "20260405.I";
 
   public Grabber()
   {
@@ -282,6 +283,26 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   #endregion IMDB Const
 
+  #region IMDB API Parameters
+
+  private const string IMDBAPI_BaseUrl = "https://api.imdbapi.dev/titles/{0}";
+
+  #endregion IMDB API Parameters
+
+  #region IMDB API Const
+
+  public const string IMDBAPI_Akas = IMDBAPI_BaseUrl + "/akas";
+  public const string IMDBAPI_Images = IMDBAPI_BaseUrl + "/images";
+  public const string IMDBAPI_Credits = IMDBAPI_BaseUrl + "/credits";
+  public const string IMDBAPI_Release = IMDBAPI_BaseUrl + "/releaseDates";
+  public const string IMDBAPI_Awards = IMDBAPI_BaseUrl + "/awardNominations";
+  public const string IMDBAPI_Parents = IMDBAPI_BaseUrl + "/parentsGuide";
+  public const string IMDBAPI_Certificates = IMDBAPI_BaseUrl + "/certificates";
+  public const string IMDBAPI_Company = IMDBAPI_BaseUrl + "/companyCredits";
+  public const string IMDBAPI_BoxOffice = IMDBAPI_BaseUrl + "/boxOffice";
+
+  #endregion IMDB API Const
+
   #region TMDB Methods
 
   public static TMDBUrl[] GetTitles(string title)
@@ -349,7 +370,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     }
 
     string sRequest = MakeTMDBUrl(API_SearchMovie, string.Empty, searchStr/*, year*/);
-    string json = GetWebServerResponse(sRequest);
+    string json = GetPage(sRequest);
     // Log.Debug("{0} GetTitles({1}) TMDB Response = {2}", strGrabber, title, json);
 
     if (!string.IsNullOrEmpty(json))
@@ -431,7 +452,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     try
     {
       string sRequest = GetTMDBMovieDetailsURL(url);
-      json = GetWebServerResponse(sRequest);
+      json = GetPage(sRequest);
     }
     catch
     {
@@ -615,7 +636,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     try
     {
       string sRequest = MakeTMDBUrl(API_ReleaseInfo, movie.ID.ToString());
-      string json = GetWebServerResponse(sRequest);
+      string json = GetPage(sRequest);
       if (string.IsNullOrEmpty(json))
       {
         return;
@@ -700,7 +721,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     try
     {
       string sRequest = MakeTMDBUrl(API_Casts, movie.ID.ToString());
-      json = GetWebServerResponse(sRequest);
+      json = GetPage(sRequest);
 
       if (string.IsNullOrEmpty(json))
       {
@@ -771,7 +792,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
     try
     {
-      json = GetWebServerResponse(sRequest);
+      json = GetPage(sRequest);
 
       if (string.IsNullOrEmpty(json))
       {
@@ -867,7 +888,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
     // IMDB MPAA Rating / Text
     string pageURL = string.Format(IMDB_Parents, movieDetails.IMDBNumber);
-    string page = GetWebServerResponse(pageURL);
+    string page = GetPage(pageURL);
     if (string.IsNullOrEmpty(movieDetails.MPARating))
     {
       movieDetails.MPARating = GetMPARating(page);
@@ -882,7 +903,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
         string.IsNullOrEmpty(movieDetails.Votes))
     {
       pageURL = string.Format(IMDB_BaseUrl, movieDetails.IMDBNumber);
-      page = GetWebServerResponse(pageURL);
+      page = GetPage(pageURL);
 
       // IMDB Languages
       if (string.IsNullOrEmpty(movieDetails.Language))
@@ -912,7 +933,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     if (string.IsNullOrEmpty(movieDetails.TagLine))
     {
       pageURL = string.Format(IMDB_Taglines, movieDetails.IMDBNumber);
-      page = GetWebServerResponse(pageURL);
+      page = GetPage(pageURL);
       if (string.IsNullOrEmpty(movieDetails.TagLine))
       {
         movieDetails.TagLine = GetTagLineIMDB(page);
@@ -921,7 +942,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
     // Get Technical data
     pageURL = string.Format(IMDB_Tech, movieDetails.IMDBNumber);
-    page = GetWebServerResponse(pageURL);
+    page = GetPage(pageURL);
     string technical = GetTechnicalIMDB(page);
     if (!string.IsNullOrEmpty(technical))
     {
@@ -934,103 +955,117 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     // Awards MP1-4846
     try
     {
-      string _awardsURL = string.Format(IMDB_Awards, IMDBID);
-      string _awardsPage = GetWebServerResponse(_awardsURL);
+      string _awardsURL = string.Format(IMDBAPI_Awards, IMDBID);
+      string _awardsPage = GetPage(_awardsURL);
       if (string.IsNullOrEmpty(_awardsPage))
       {
         return string.Empty;
       }
 
-      string regex = @"type=.application\/json.>(?<json>{.+?})<";
-      string json = Regex.Match(_awardsPage, regex, RegexOptions.Singleline | RegexOptions.IgnoreCase).Groups["json"].Value;
-      if (string.IsNullOrEmpty(json))
-      {
-        Log.Debug("{0} GetIMDBAwards IMDB = {1}, JSON not found.", strGrabber, IMDBID);
-      }
-
       try
       {
-        JsonIMDBAwards Awards = JsonConvert.DeserializeObject<JsonIMDBAwards>(json);
+        IMDBAwards Awards = JsonConvert.DeserializeObject<IMDBAwards>(json);
         if (Awards == null)
         {
           Log.Debug("{0} GetIMDBAwards IMDB = {1}, JSON changed!?.", strGrabber, IMDBID);
         }
 
-        if (Awards.props != null && Awards.props.pageProps != null &&
-          (Awards.props.pageProps.contentData == null || Awards.props.pageProps.contentData.nominationsCount == 0))
+        if (Awards.stats != null && (Awards.awardNominations == null || Awards.stats.nominationCount == 0))
         {
           Log.Debug("{0} GetIMDBAwards No Awards for IMDB = {1}", strGrabber, IMDBID);
         }
 
         string _awardsList = string.Empty;
-        if (!string.IsNullOrEmpty(Awards.props.pageProps.contentData.entityMetadata.id))
+        if (Awards.stats != null && Awards.awardNominations != null)
         {
           string AwardsMASK = string.Empty;
-          if (Awards.props.pageProps.contentData.winsCount > 0 && Awards.props.pageProps.contentData.nominationsCount > 0)
+          if (Awards.stats.winCount > 0 && Awards.stats.nominationCount > 0)
           {
             AwardsMASK = "{0} WINS & {1} NOMINATIONS";
           }
-          else if (Awards.props.pageProps.contentData.winsCount > 0)
+          else if (Awards.stats.winCount > 0)
           {
             AwardsMASK = "{0} WINS";
           }
-          else if (Awards.props.pageProps.contentData.nominationsCount > 0)
+          else if (Awards.stats.nominationCount > 0)
           {
             AwardsMASK = "{1} NOMINATIONS";
           }
-          string awardMainTitle = string.Format(AwardsMASK, Awards.props.pageProps.contentData.winsCount,
-                                                            Awards.props.pageProps.contentData.nominationsCount);
+          string awardMainTitle = string.Format(AwardsMASK, Awards.stats.winCount,
+                                                            Awards.stats.nominationCount);
           if (!string.IsNullOrEmpty(awardMainTitle))
           {
             _awardsList = "::: " + awardMainTitle + " :::\n\n";
           }
 
-          foreach (var category in Awards.props.pageProps.contentData.categories)
+          // Winner
+          var groupedAwards = data.awardNominations
+            .Where(n => n.isWinner)
+            .GroupBy(n => n.awardEvent.name)
+            .OrderByDescending(g => g.Max(a => a.year));
+        
+          foreach (var group in groupedAwards)
           {
-            var awards = category.section.items.Where(x => x.rowTitle.Contains("Winner"));
-            string awardMainName = string.Empty;
-            if (awards.Count() > 0)
+            string awardMainName = group.Key;
+            _awardsList += "* " + awardMainName + "\n";
+            _awardsList += "Won:\n";
+        
+            var sortedAwards = group.OrderByDescending(a => a.year);
+        
+            foreach (var award in sortedAwards)
             {
-              awardMainName = category.name;
+              string awardLineName = award.year + " " + award.text;
+              string awardLineWho = (award.nominees != null && award.nominees.Count > 0) 
+                                    ? string.Join(", ", award.nominees.Select(x => x.displayName).ToArray())
+                                    : string.Empty;
+              string awardLineWhat = award.category;
+        
+              string finalLine = string.Format("- {0}", awardLineName);
+              if (!string.IsNullOrEmpty(awardLineWho)) 
+                finalLine += " - " + awardLineWho;
+              if (!string.IsNullOrEmpty(awardLineWhat)) 
+                finalLine += " - " + awardLineWhat;
+              _awardsList += finalLine + "\n";
 
-              _awardsList += "* " + awardMainName + "\n";
-              _awardsList += "Won:\n";
-
-              foreach (var award in awards)
-              {
-                string awardLineName = Regex.Match(award.rowTitle, @"(?<year>\d{4})").Groups["year"].Value + " " + award.rowSubTitle;
-                string awardLineWho = string.Join(", ", award.subListContent.Select(x => x.text).ToList());
-                string awardLineWhat = string.Join(", ", award.listContent.Select(x => x.text).ToList());
-
-                _awardsList += "- " + awardLineName + (string.IsNullOrEmpty(awardLineWho) ? string.Empty : " - " + awardLineWho) + (string.IsNullOrEmpty(awardLineWhat) ? string.Empty : " - " + awardLineWhat) + "\n";
-                Log.Debug("{4} Award (W): {0} - {1} {2} {3}", awardMainName, awardLineName, awardLineWho, awardLineWhat, strGrabber);
-              }
+              Log.Debug("{4} Award (W): {0} - {1} {2} {3}", awardMainName, awardLineName, awardLineWho, awardLineWhat, strGrabber);
             }
+          }
 
-            awards = category.section.items.Where(x => x.rowTitle.Contains("Nominee"));
-            if (awards.Count() > 0)
+          // Nominee
+          var groupedNominations  = data.awardNominations
+            .Where(n => !n.isWinner)
+            .GroupBy(n => n.awardEvent.name)
+            .OrderByDescending(g => g.Max(a => a.year));
+        
+          foreach (var group in groupedNominations )
+          {
+            string awardMainName = group.Key;
+            _awardsList += "* " + awardMainName + "\n";
+            _awardsList += "Nominated:\n";
+        
+            var sortedAwards = group.OrderByDescending(a => a.year);
+        
+            foreach (var award in sortedAwards)
             {
-              if (string.IsNullOrEmpty(awardMainName))
-              {
-                awardMainName = category.name;
-                _awardsList += "* " + awardMainName + "\n";
-              }
-              _awardsList += "Nominated:\n";
+              string awardLineName = award.year + " " + award.text;
+              string awardLineWho = (award.nominees != null && award.nominees.Count > 0) 
+                                    ? string.Join(", ", award.nominees.Select(x => x.displayName).ToArray())
+                                    : string.Empty;
+              string awardLineWhat = award.category;
+        
+              string finalLine = string.Format("- {0}", awardLineName);
+              if (!string.IsNullOrEmpty(awardLineWho)) 
+                finalLine += " - " + awardLineWho;
+              if (!string.IsNullOrEmpty(awardLineWhat)) 
+                finalLine += " - " + awardLineWhat;
+              _awardsList += finalLine + "\n";
 
-              foreach (var award in awards)
-              {
-                string awardLineName = Regex.Match(award.rowTitle, @"(?<year>\d{4})").Groups["year"].Value + " " + award.rowSubTitle;
-                string awardLineWho = string.Join(", ", award.subListContent.Select(x => x.text).ToList());
-                string awardLineWhat = string.Join(", ", award.listContent.Select(x => x.text).ToList());
-
-                _awardsList += "- " + awardLineName + (string.IsNullOrEmpty(awardLineWho) ? string.Empty : " - " + awardLineWho) + (string.IsNullOrEmpty(awardLineWhat) ? string.Empty : " - " + awardLineWhat) + "\n";
-                Log.Debug("{4} Award (N): {0} - {1} {2} {3}", awardMainName, awardLineName, awardLineWho, awardLineWhat, strGrabber);
-              }
+              Log.Debug("{4} Award (N): {0} - {1} {2} {3}", awardMainName, awardLineName, awardLineWho, awardLineWhat, strGrabber);
             }
-            if (!string.IsNullOrEmpty(awardMainName))
-            {
-              _awardsList += "\n";
-            }
+          }
+          if (!string.IsNullOrEmpty(awardMainName))
+          {
+            _awardsList += "\n";
           }
         }
 
@@ -1054,10 +1089,12 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   private static string GetTriviaIMDB(string IMDBID)
   {
+    return string.Empty;
+
     try
     {
       string _triviaURL = string.Format(IMDB_Trivia, IMDBID);
-      string _triviaPage = GetWebServerResponse(_triviaURL);
+      string _triviaPage = GetPage(_triviaURL);
       if (string.IsNullOrEmpty(_triviaPage))
       {
         return string.Empty;
@@ -1100,12 +1137,13 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   private static string GetUserReviewIMDB(string IMDBID)
   {
-    string json = string.Empty;
+    return string.Empty;
 
+    string json = string.Empty;
     try
     {
       string _reviewURL = string.Format(IMDB_Review, IMDBID);
-      string _reviewPage = GetWebServerResponse(_reviewURL);
+      string _reviewPage = GetPage(_reviewURL);
       if (string.IsNullOrEmpty(_reviewPage))
       {
         return string.Empty;
@@ -1750,41 +1788,168 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   #region Web
 
-  private static string GetWebServerResponse(string srequest)
+  private static Hashtable IMDBPageCache;
+
+  private static void ClearPageCache()
   {
-    Log.Debug("{0} GetWebServerResponse: {1}", strGrabber, HideAPIKey(srequest));
-    string sReturn = string.Empty;
-    System.Net.HttpWebRequest oHttpWebRequest;
+    IMDBPageCache = new Hashtable();
+  }
+
+  private string GetPage(string strUrl, string strEncode = "utf-8", bool cache = false, int retryCount = 0)
+  {
+    Log.Debug("{0} GetPage: {1} (Attempt: {2})", strGrabber, HideAPIKey(strUrl), retryCount + 1);
+
+    string strBody = string.Empty;
+    absoluteUri = string.Empty;
+
+    if (cache)
+    {
+      if (IMDBPageCache == null)
+      {
+        IMDBPageCache = new Hashtable();
+      }
+
+      if (IMDBPageCache.Contains(strUrl))
+      {
+        Log.Debug("{0} GetPage: From Cache: {1}", strGrabber, HideAPIKey(strUrl));
+        return (string)IMDBPageCache[strUrl];
+      }
+    }
+
+    HttpWebRequest req = null;
     try
     {
-      oHttpWebRequest = (System.Net.HttpWebRequest)System.Net.WebRequest.Create(srequest);
-      oHttpWebRequest.Timeout = 20000;
-      oHttpWebRequest.Method = System.Net.WebRequestMethods.Http.Get;
-
+      // Make the Webrequest
+      req = (HttpWebRequest)WebRequest.Create(strUrl);
+    
       // Set Headers
-      oHttpWebRequest.UserAgent  = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36";
-      if (srequest.IndexOf(".imdb.") > 0)
+      req.UserAgent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+      req.Headers.Add("Accept-Language", "en-US,en;q=0.5");
+      req.Accept = "application/json";
+  
+      // Proxy 
+      req.Proxy.Credentials = CredentialCache.DefaultCredentials;
+  
+      // Cookie
+      req.CookieContainer = new CookieContainer();
+  
+      // Timeout
+      req.Timeout = 20000;
+      req.ReadWriteTimeout = 20000;
+  
+      // Response
+      using (HttpWebResponse response = (HttpWebResponse)req.GetResponse())
       {
-        oHttpWebRequest.Headers.Add("Accept-Language", "en-US,en;q=0.5");
+        if (response.StatusCode != HttpStatusCode.OK)
+        {
+          Log.Debug("{0} GetPage: Response code {1}/{2}", strGrabber, (int)response.StatusCode, response.StatusCode);
+        }
+  
+        // URI
+        absoluteUri = response.ResponseUri.AbsoluteUri;
+  
+        // Encoding: depends on selected page
+        Encoding encode = Encoding.GetEncoding(strEncode);
+  
+        // Get Page
+        using (Stream receiveStream = response.GetResponseStream())
+        {
+          using (StreamReader sr = new StreamReader(receiveStream, encode))
+          {
+            strBody = sr.ReadToEnd().Trim();
+          }
+        }
+      }
+    }
+    catch (WebException webEx)
+    {
+      var response = webEx.Response as HttpWebResponse;
+      if (response != null && (int)response.StatusCode == 429 && retryCount < 3)
+      {
+          int sleepMs = (retryCount + 1) * 5000;
+          string retryAfter = response.Headers["Retry-After"];
+          int seconds = 0;
+          if (!string.IsNullOrEmpty(retryAfter) && int.TryParse(retryAfter, out seconds))
+          {
+            if (seconds > 0)
+            {
+              sleepMs = seconds * 1000;
+            }
+          }
+          Log.Debug("{0} GetPage: 429 Too Many Requests. Attempt: {1}. Wait {2}ms...", strGrabber, retryCount + 1, sleepMs);
+          System.Threading.Thread.Sleep(sleepMs);
+          
+          return GetPage(strUrl, strEncode, cache, retryCount + 1);
+      }
+      Log.Error("{0} GetPage: WebException: {1} err:{2}", strGrabber, HideAPIKey(strUrl), webEx.Message);
+    }
+    catch (Exception ex)
+    {
+      Log.Error("{0} GetPage: Exception for WebPage: {1} err:{2}", strGrabber, HideAPIKey(strUrl), ex.Message);
+    }
+    finally
+    {
+      req = null;
+    }
+
+    if (string.IsNullOrEmpty(strBody))
+    {
+      Log.Debug("{0} GetPage: Empty response for: {1}", strGrabber, HideAPIKey(strUrl));
+    }
+
+    if (cache && !string.IsNullOrEmpty(strBody))
+    {
+      Log.Debug("{0} GetPage: Page to Cache: {1}", strGrabber, HideAPIKey(strUrl));
+      IMDBPageCache.Add(strUrl, strBody);
+    }
+    return strBody;
+  }
+
+  public string GetPages(string strUrl, string strEncode = "utf-8", bool cache = true)
+  {
+    JObject mainResult = null;
+    string currentPage = strUrl;
+
+    while (true)
+    {
+      string json = GetPage(currentPage, strEncode, cache);
+      if (string.IsNullOrWhiteSpace(json))
+      {
+        break;
+      }
+
+      JObject pageData = JObject.Parse(json);
+      if (mainResult == null)
+      {
+        mainResult = pageData;
       }
       else
       {
-        oHttpWebRequest.Accept = "application/json";
+        var arrayProperty = pageData.Properties().FirstOrDefault(p => p.Value.Type == JTokenType.Array);
+        if (arrayProperty != null)
+        {
+          var mainArray = mainResult[arrayProperty.Name] as JArray;
+          if (mainArray != null)
+          {
+            mainArray.Merge(arrayProperty.Value);
+          }
+        }
       }
-      System.Net.HttpWebResponse oResponse = (System.Net.HttpWebResponse)oHttpWebRequest.GetResponse();
-
-      using (System.IO.StreamReader sr = new System.IO.StreamReader(oResponse.GetResponseStream()))
+      var token = pageData["nextPageToken"];
+      if (token == null || string.IsNullOrEmpty(token.ToString()))
       {
-        sReturn = sr.ReadToEnd();
+        break;
       }
-      oResponse.Close();
+
+      string separator = strUrl.Contains("?") ? "&" : "?";
+      currentPage = string.Format("{0}{1}pageToken={2}", strUrl, separator, token.ToString());
     }
-    catch { }
-    finally
+
+    if (mainResult != null)
     {
-      oHttpWebRequest = null;
+      return mainResult.ToString();
     }
-    return sReturn;
+    return string.Empty;
   }
 
   #endregion Web
@@ -2035,6 +2200,59 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   }
 
   #endregion TMDB API Struct
+
+  #region IMDB API Struct
+
+  public class IMDBPrimaryImage
+  {
+  public string url { get; set; }
+  public int width { get; set; }
+  public int height { get; set; }
+  }
+
+  // Awards
+  // https://api.imdbapi.dev/titles/tt0499549/awardNominations
+  public class IMDBAwardNomination
+  {
+    [JsonProperty("event")]
+  public IMDBAwardEvent awardEvent { get; set; }
+  public int year { get; set; }
+  public string text { get; set; }
+  public string category { get; set; }
+  public bool isWinner { get; set; }
+  public int winnerRank { get; set; }
+  public List<IMDBAwardNominee> nominees { get; set; }
+  }
+
+  public class IMDBAwardEvent
+  {
+    public string id { get; set; }
+    public string name { get; set; }
+  }
+
+  public class IMDBAwardNominee
+  {
+    public string id { get; set; }
+    public string displayName { get; set; }
+    public IMDBPrimaryImage primaryImage { get; set; }
+    public List<string> primaryProfessions { get; set; }
+    public List<string> alternativeNames { get; set; }
+  }
+
+  public class IMDBAwardsStats
+  {
+    public int nominationCount { get; set; }
+    public int winCount { get; set; }
+  }
+
+  public class IMDBAwards
+  {
+    public IMDBAwardsStats stats { get; set; }
+    public List<IMDBAwardNomination> awardNominations { get; set; }
+    public string nextPageToken { get; set; }
+  }
+
+  #endregion IMDB API Struct
 
   #region IMDB JSON Struct
 
@@ -2419,37 +2637,37 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   private static Dictionary<string, string> Groups = new Dictionary<string, string>() // Language - Add to Group|Groups for Our films|Groups for Foreign films
   {
     { "EN", "F|Our films|Foreign films" },
-	{ "RU", "T|Наши фильмы|Иностранные фильмы" },
-	{ "UA", "T|Наші фільми|Іноземні фільми"},
-	{ "DE", "F|Unsere Filme|Ausländische Filme" }
+  { "RU", "T|Наши фильмы|Иностранные фильмы" },
+  { "UA", "T|Наші фільми|Іноземні фільми"},
+  { "DE", "F|Unsere Filme|Ausländische Filme" }
   };
 
   private static bool GRABBER_ADDTOUSERGROUP_Lang()
   {
     return GetGRABBER_GroupSetting(0) == "T";
-  }	
+  }  
 
   private static string GRABBER_OurGroup()
   {
     return GetGRABBER_GroupSetting(1);
-  }	
+  }  
 
   private static string GRABBER_ForeignGroup()
   {
     return GetGRABBER_GroupSetting(2);
-  }	
+  }  
 
   private static string GetGRABBER_GroupSetting(int i)
   {
-	string str = Groups.Where(x => x.Key == API_LANG).Select(x => x.Value).FirstOrDefault();
-	if (string.IsNullOrEmpty(str))
-	{
+  string str = Groups.Where(x => x.Key == API_LANG).Select(x => x.Value).FirstOrDefault();
+  if (string.IsNullOrEmpty(str))
+  {
       str = Groups.Where(x => x.Key == "EN").Select(x => x.Value).FirstOrDefault();
-	}
-	if (string.IsNullOrEmpty(str))
-	{
-	  return string.Empty;
-	}
+  }
+  if (string.IsNullOrEmpty(str))
+  {
+    return string.Empty;
+  }
 
     string[] group = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
     if (i < group.Length)
@@ -2457,29 +2675,29 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       return group[i];
     }
     return string.Empty;
-  }	
+  }  
 
   private static Dictionary<string, string> Technical = new Dictionary<string, string>()
   {
     { "EN", "Technical specifications" },
-	{ "RU", "Информация о фильме" },
-	{ "UA", "Інформація про фільм"},
-	{ "DE", "Technische Spezifikationen" }
+  { "RU", "Информация о фильме" },
+  { "UA", "Інформація про фільм"},
+  { "DE", "Technische Spezifikationen" }
   };
 
   private static string GRABBER_Technical()
   {
-	string str = Technical.Where(x => x.Key == API_LANG).Select(x => x.Value).FirstOrDefault();
-	if (string.IsNullOrEmpty(str))
-	{
+  string str = Technical.Where(x => x.Key == API_LANG).Select(x => x.Value).FirstOrDefault();
+  if (string.IsNullOrEmpty(str))
+  {
       str = Technical.Where(x => x.Key == "EN").Select(x => x.Value).FirstOrDefault();
-	}
-	if (string.IsNullOrEmpty(str))
-	{
-	  return string.Empty;
-	}
+  }
+  if (string.IsNullOrEmpty(str))
+  {
+    return string.Empty;
+  }
     return str;
-  }	
+  }  
 
   #endregion
 
