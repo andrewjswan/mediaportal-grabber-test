@@ -907,6 +907,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     movieDetails.MPAAText = GetMPARatingText(movieDetails.IMDBNumber);
 
     // IMDB RunTime / Languages / Studios / Rating / Votes
+    string pageURL = string.Empty;
     if (movieDetails.RunTime == 0 || 
         string.IsNullOrEmpty(movieDetails.Language) || 
         string.IsNullOrEmpty(movieDetails.Studios) || 
