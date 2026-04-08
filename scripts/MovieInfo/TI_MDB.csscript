@@ -1000,74 +1000,74 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
             _awardsList = "::: " + awardMainTitle + " :::\n\n";
           }
 
-          // Winner
-          var groupedAwards = Awards.awardNominations
-            .Where(n => n.isWinner)
-            .GroupBy(n => n.awardEvent.name)
-            .OrderByDescending(g => g.Max(a => a.year));
-        
-          foreach (var group in groupedAwards)
+          var allGroups = data.awardNominations
+                          .GroupBy(n => n.awardEvent.name)
+                          .OrderByDescending(g => g.Max(a => a.year));
+
+          foreach (var group in allGroups)
           {
             string awardMainName = group.Key;
+    
+            // Разделяем на победителей и номинантов
+            var winners = group.Where(x => x.isWinner).OrderByDescending(x => x.year).ToList();
+            var nominees = group.Where(x => !x.isWinner).OrderByDescending(x => x.year).ToList();
+
+            if (winners.Count == 0 && nominees.Count == 0) continue;
+
             _awardsList += "* " + awardMainName + "\n";
-            _awardsList += "Won:\n";
-        
-            var sortedAwards = group.OrderByDescending(a => a.year);
-        
-            foreach (var award in sortedAwards)
+
+            // Winner
+            if (winners.Count > 0)
             {
-              string awardLineName = award.year + " " + award.text;
-              string awardLineWho = (award.nominees != null && award.nominees.Count > 0) 
-                                    ? string.Join(", ", award.nominees.Select(x => x.displayName).ToArray())
-                                    : string.Empty;
-              string awardLineWhat = award.category;
-        
-              string finalLine = string.Format("- {0}", awardLineName);
-              if (!string.IsNullOrEmpty(awardLineWho)) 
-                finalLine += " - " + awardLineWho;
-              if (!string.IsNullOrEmpty(awardLineWhat)) 
-                finalLine += " - " + awardLineWhat;
-              _awardsList += finalLine + "\n";
+              _awardsList += "Won:\n";
+              foreach (var award in winners)
+              {
+                string awardLineWho = (award.nominees != null && award.nominees.Count > 0) 
+                                      ? string.Join(", ", award.nominees.Select(x => x.displayName).ToArray()) 
+                                      : string.Empty;
 
-              Log.Debug("{4} Award (W): {0} - {1} {2} {3}", awardMainName, awardLineName, awardLineWho, awardLineWhat, strGrabber);
+                string line = string.Format("- {0} {1}", award.year, award.text);
+                if (!string.IsNullOrEmpty(awardLineWho))
+                {
+                  line += " - " + awardLineWho;
+                }
+                if (!string.IsNullOrEmpty(award.category))
+                {
+                  line += " - " + award.category;
+                }
+
+                _awardsList += line + "\n";
+                Log.Debug("{4} Award (W): {0} - {1} {2} {3}", awardMainName, award.year + " " + award.text, awardLineWho, award.category, strGrabber);
+              }
             }
-          }
 
-          // Nominee
-          var groupedNominations  = Awards.awardNominations
-            .Where(n => !n.isWinner)
-            .GroupBy(n => n.awardEvent.name)
-            .OrderByDescending(g => g.Max(a => a.year));
-        
-          foreach (var group in groupedNominations )
-          {
-            string awardMainName = group.Key;
-            _awardsList += "* " + awardMainName + "\n";
-            _awardsList += "Nominated:\n";
-        
-            var sortedAwards = group.OrderByDescending(a => a.year);
-        
-            foreach (var award in sortedAwards)
+            // Nominee
+            if (nominees.Count > 0)
             {
-              string awardLineName = award.year + " " + award.text;
-              string awardLineWho = (award.nominees != null && award.nominees.Count > 0) 
-                                    ? string.Join(", ", award.nominees.Select(x => x.displayName).ToArray())
-                                    : string.Empty;
-              string awardLineWhat = award.category;
-        
-              string finalLine = string.Format("- {0}", awardLineName);
-              if (!string.IsNullOrEmpty(awardLineWho)) 
-                finalLine += " - " + awardLineWho;
-              if (!string.IsNullOrEmpty(awardLineWhat)) 
-                finalLine += " - " + awardLineWhat;
-              _awardsList += finalLine + "\n";
+              _awardsList += "Nominated:\n";
+              foreach (var award in nominees)
+              {
+                string awardLineWho = (award.nominees != null && award.nominees.Count > 0) 
+                                      ? string.Join(", ", award.nominees.Select(x => x.displayName).ToArray()) 
+                                      : string.Empty;
 
-              Log.Debug("{4} Award (N): {0} - {1} {2} {3}", awardMainName, awardLineName, awardLineWho, awardLineWhat, strGrabber);
+                string line = string.Format("- {0} {1}", award.year, award.text);
+                if (!string.IsNullOrEmpty(awardLineWho))
+                {
+                  line += " - " + awardLineWho;
+                }
+                if (!string.IsNullOrEmpty(award.category))
+                {
+                  line += " - " + award.category;
+                }
+                _awardsList += line + "\n";
+                Log.Debug("{4} Award (N): {0} - {1} {2} {3}", awardMainName, award.year + " " + award.text, awardLineWho, award.category, strGrabber);
+              }
             }
-          }
-          if (!string.IsNullOrEmpty(awardMainName))
-          {
-            _awardsList += "\n";
+            if (!string.IsNullOrEmpty(awardMainName))
+            {
+              _awardsList += "\n";
+            }
           }
         }
 
@@ -1080,7 +1080,6 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       {
         Log.Debug("{0} GetIMDBAwards IMDB = {1}, Exception {2}, JSON changed!?.", strGrabber, IMDBID, ex.Message);
       }
-
     }
     catch (Exception ex)
     {
