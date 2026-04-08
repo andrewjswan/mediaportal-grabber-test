@@ -27,7 +27,7 @@ using Newtonsoft.Json.Linq;
 
 internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 {
-  const string strGrabberVersion = "20260405.I";
+  const string strGrabberVersion = "20260405.V";
 
   private TMDBMovie tmdbMovie;
   private TMDBMovie imdbMovie;
@@ -567,7 +567,7 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
           actor.DateOfDeath = tmdbActor.DateOfDeath;
         }
 
-        if (string.IsNullOrEmpty(actor.MiniBiography) && !string.IsNullOrEmpty(tmdbActor.MiniBiography))
+        if (!string.IsNullOrEmpty(tmdbActor.MiniBiography))
         {
           Log.Debug("TMDB {0}: {1}", "MiniBiography", tmdbActor.MiniBiography);
           actor.MiniBiography = tmdbActor.MiniBiography;
