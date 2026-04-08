@@ -1252,6 +1252,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       return string.Empty;
     }
 
+    string mpaaRating = string.Empty;
     try
     {
       IMDBCertificates Certificates = JsonConvert.DeserializeObject<IMDBCertificates>(page);
@@ -1263,7 +1264,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       var cert = Certificates.certificates
                              .FirstOrDefault(c => c.country.code == API_LANG && (c.attributes == null || c.attributes.Count == 0)) ??
                                              Certificates.certificates.FirstOrDefault(c => c.country.code == API_LANG);
-      string mpaaRating = (cert != null) ? cert.rating : string.Empty;
+      mpaaRating = (cert != null) ? cert.rating : string.Empty;
       if (!string.IsNullOrEmpty(mpaaRating))
       {
         if (API_LANG == "RU")
