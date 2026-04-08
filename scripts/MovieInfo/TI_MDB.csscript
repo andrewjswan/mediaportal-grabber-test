@@ -140,6 +140,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       movieDetails.UserReview = string.Empty;
 
       /* IMDB Test
+      Log.Warn("{0} GetDetails: IMDB Test Turned ON!");
       movieDetails.UserReview = string.Empty;
       movieDetails.MPARating = string.Empty;
       movieDetails.Rating = 0.0f;
@@ -888,14 +889,22 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       movieDetails.MovieAwards = GetAwardsIMDB(movieDetails.IMDBNumber);
     }
 
+    /* IMDB Test */
+    Log.Warn("{0} GetIMDBDetails: IMDB Test Turned ON!");
+    movieDetails.MPARating = string.Empty;
+    movieDetails.RunTime = 0;
+    movieDetails.Language = string.Empty;
+    movieDetails.Studios = string.Empty;
+    movieDetails.Rating = 0.0f;
+    movieDetails.Votes = string.Empty;
+    movieDetails.TagLine = string.Empty;
+
     // IMDB MPAA Rating / Text
-    string pageURL = string.Format(IMDB_Parents, movieDetails.IMDBNumber);
-    string page = GetPage(pageURL);
     if (string.IsNullOrEmpty(movieDetails.MPARating))
     {
-      movieDetails.MPARating = GetMPARating(page);
+      movieDetails.MPARating = GetMPARating(movieDetails.IMDBNumber);
     }
-    movieDetails.MPAAText = GetMPARatingText(page);
+    movieDetails.MPAAText = GetMPARatingText(movieDetails.IMDBNumber);
 
     // IMDB RunTime / Languages / Studios / Rating / Votes
     if (movieDetails.RunTime == 0 || 
@@ -1232,23 +1241,27 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     return string.Empty;
   }
 
-  private static string GetMPARating(string IMDBPage)
+  private static string GetMPARating(string IMDBID)
   {
-    string page = IMDBPage;
+    string pageURL = string.Format(IMDBAPI_Certificates, IMDBID);
+    string page = GetPage(pageURL);
     if (string.IsNullOrEmpty(page))
     {
       return string.Empty;
     }
 
-    string mpaaRating = string.Empty;
-
-    string regexBlockPattern = @"section id=.certificates.>(?<block>[\s\S]+?)<\/section>";
-    string CertBlock = Regex.Match(page, regexBlockPattern).Groups["block"].Value;
-    if (!string.IsNullOrEmpty(CertBlock))
+    try
     {
-      string regexPattern = @"<a href=[^>]+?{0}:(?!TV-)[^>]+?>.+?:(?<cert>[^<]+?)<";
-      string regexAPIPattern = regexPattern.Replace("{0}", API_LANG);
-      mpaaRating = Regex.Match(CertBlock, regexAPIPattern).Groups["cert"].Value;
+      IMDBCertificates Certificates = JsonConvert.DeserializeObject<IMDBCertificates>(page);
+      if (Certificates == null)
+      {
+        Log.Debug("{0} GetMPARating IMDB = {1}, JSON changed!?.", strGrabber, IMDBID);
+        return string.Empty;
+      }
+      var cert = Certificates.certificates
+                             .FirstOrDefault(c => c.country.code == API_LANG && (c.attributes == null || c.attributes.Count == 0)) ??
+                                             Certificates.certificates.FirstOrDefault(c => c.country.code == API_LANG);
+      string mpaaRating = (cert != null) ? cert.rating : string.Empty;
       if (!string.IsNullOrEmpty(mpaaRating))
       {
         if (API_LANG == "RU")
@@ -1259,16 +1272,20 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       }
       else
       {
-        regexAPIPattern = regexPattern.Replace("{0}", "US");
-        mpaaRating = Regex.Match(CertBlock, regexAPIPattern).Groups["cert"].Value;
+        cert = Certificates.certificates
+                           .FirstOrDefault(c => c.country.code == "US" && (c.attributes == null || c.attributes.Count == 0)) ??
+                                           Certificates.certificates.FirstOrDefault(c => c.country.code == "US");
+        mpaaRating = (cert != null) ? cert.rating : string.Empty;
         if (!string.IsNullOrEmpty(mpaaRating))
         {
           Log.Debug("{0} IMDB MPAA: {1}: {2}", strGrabber, "US", mpaaRating);
         }
         else
         {
-          regexAPIPattern = regexPattern.Replace("{0}", "GB");
-          mpaaRating = Regex.Match(CertBlock, regexAPIPattern).Groups["cert"].Value;
+          cert = Certificates.certificates
+                             .FirstOrDefault(c => c.country.code == "GB" && (c.attributes == null || c.attributes.Count == 0)) ??
+                                             Certificates.certificates.FirstOrDefault(c => c.country.code == "GB");
+          mpaaRating = (cert != null) ? cert.rating : string.Empty;
           if (!string.IsNullOrEmpty(mpaaRating))
           {
             Log.Debug("{0} IMDB MPAA: {1}: {2}", strGrabber, "UK", mpaaRating);
@@ -1276,12 +1293,17 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
         }
       }
     }
+    catch (Exception ex)
+    {
+      Log.Debug("{0} GetMPARating IMDB = {1}, Exception {2}, JSON changed!?.", strGrabber, IMDBID, ex.Message);
+    }
     return mpaaRating;
   }
 
-  private static string GetMPARatingText(string IMDBPage)
+  private static string GetMPARatingText(string IMDBID)
   {
-    string page = IMDBPage;
+    string pageURL = string.Format(IMDBAPI_Parents, IMDBID);
+    string page = GetPage(pageURL);
     if (string.IsNullOrEmpty(page))
     {
       return string.Empty;
@@ -2206,9 +2228,15 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   public class IMDBPrimaryImage
   {
-  public string url { get; set; }
-  public int width { get; set; }
-  public int height { get; set; }
+    public string url { get; set; }
+    public int width { get; set; }
+    public int height { get; set; }
+  }
+
+  public class IMDBCountry
+  {
+    public string code { get; set; }
+    public string name { get; set; }
   }
 
   // Awards
@@ -2216,13 +2244,13 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   public class IMDBAwardNomination
   {
     [JsonProperty("event")]
-  public IMDBAwardEvent awardEvent { get; set; }
-  public int year { get; set; }
-  public string text { get; set; }
-  public string category { get; set; }
-  public bool isWinner { get; set; }
-  public int winnerRank { get; set; }
-  public List<IMDBAwardNominee> nominees { get; set; }
+    public IMDBAwardEvent awardEvent { get; set; }
+    public int year { get; set; }
+    public string text { get; set; }
+    public string category { get; set; }
+    public bool isWinner { get; set; }
+    public int winnerRank { get; set; }
+    public List<IMDBAwardNominee> nominees { get; set; }
   }
 
   public class IMDBAwardEvent
@@ -2251,6 +2279,21 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     public IMDBAwardsStats stats { get; set; }
     public List<IMDBAwardNomination> awardNominations { get; set; }
     public string nextPageToken { get; set; }
+  }
+
+  // Certificates
+  // https://api.imdbapi.dev/titles/tt0499549/certificates
+  public class IMDBCertificate
+  {
+    public string rating { get; set; }
+    public IMDBCountry country { get; set; }
+    public List<string> attributes { get; set; }
+  }
+
+  public class IMDBCertificates
+  {
+    public List<IMDBCertificate> certificates { get; set; }
+    public int totalCount { get; set; }
   }
 
   #endregion IMDB API Struct
