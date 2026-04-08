@@ -1844,9 +1844,6 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
           Log.Debug("{0} GetPage: Response code {1}/{2}", strGrabber, (int)response.StatusCode, response.StatusCode);
         }
   
-        // URI
-        absoluteUri = response.ResponseUri.AbsoluteUri;
-  
         // Encoding: depends on selected page
         Encoding encode = Encoding.GetEncoding(strEncode);
   
