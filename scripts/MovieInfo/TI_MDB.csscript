@@ -1000,7 +1000,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
             _awardsList = "::: " + awardMainTitle + " :::\n\n";
           }
 
-          var allGroups = data.awardNominations
+          var allGroups = Awards.awardNominations
                           .GroupBy(n => n.awardEvent.name)
                           .OrderByDescending(g => g.Max(a => a.year));
 
@@ -1008,11 +1008,12 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
           {
             string awardMainName = group.Key;
     
-            // Разделяем на победителей и номинантов
             var winners = group.Where(x => x.isWinner).OrderByDescending(x => x.year).ToList();
             var nominees = group.Where(x => !x.isWinner).OrderByDescending(x => x.year).ToList();
-
-            if (winners.Count == 0 && nominees.Count == 0) continue;
+            if (winners.Count == 0 && nominees.Count == 0)
+            {
+              continue;
+            }
 
             _awardsList += "* " + awardMainName + "\n";
 
@@ -1035,7 +1036,6 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
                 {
                   line += " - " + award.category;
                 }
-
                 _awardsList += line + "\n";
                 Log.Debug("{4} Award (W): {0} - {1} {2} {3}", awardMainName, award.year + " " + award.text, awardLineWho, award.category, strGrabber);
               }
