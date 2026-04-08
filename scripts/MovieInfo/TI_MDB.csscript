@@ -19,6 +19,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 
@@ -964,7 +966,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
       try
       {
-        IMDBAwards Awards = JsonConvert.DeserializeObject<IMDBAwards>(json);
+        IMDBAwards Awards = JsonConvert.DeserializeObject<IMDBAwards>(_awardsPage);
         if (Awards == null)
         {
           Log.Debug("{0} GetIMDBAwards IMDB = {1}, JSON changed!?.", strGrabber, IMDBID);
@@ -999,7 +1001,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
           }
 
           // Winner
-          var groupedAwards = data.awardNominations
+          var groupedAwards = Awards.awardNominations
             .Where(n => n.isWinner)
             .GroupBy(n => n.awardEvent.name)
             .OrderByDescending(g => g.Max(a => a.year));
@@ -1032,7 +1034,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
           }
 
           // Nominee
-          var groupedNominations  = data.awardNominations
+          var groupedNominations  = Awards.awardNominations
             .Where(n => !n.isWinner)
             .GroupBy(n => n.awardEvent.name)
             .OrderByDescending(g => g.Max(a => a.year));
@@ -1798,9 +1800,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   private static string GetPage(string strUrl, string strEncode = "utf-8", bool cache = false, int retryCount = 0)
   {
     Log.Debug("{0} GetPage: {1} (Attempt: {2})", strGrabber, HideAPIKey(strUrl), retryCount + 1);
-
     string strBody = string.Empty;
-    absoluteUri = string.Empty;
 
     if (cache)
     {
