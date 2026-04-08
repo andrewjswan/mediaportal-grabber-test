@@ -295,7 +295,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   public const string IMDBAPI_Images = IMDBAPI_BaseUrl + "/images";
   public const string IMDBAPI_Credits = IMDBAPI_BaseUrl + "/credits";
   public const string IMDBAPI_Release = IMDBAPI_BaseUrl + "/releaseDates";
-  public const string IMDBAPI_Awards = IMDBAPI_BaseUrl + "/awardNominations";
+  public const string IMDBAPI_Awards = IMDBAPI_BaseUrl + "/awardNominations?pageSize=50";
   public const string IMDBAPI_Parents = IMDBAPI_BaseUrl + "/parentsGuide";
   public const string IMDBAPI_Certificates = IMDBAPI_BaseUrl + "/certificates";
   public const string IMDBAPI_Company = IMDBAPI_BaseUrl + "/companyCredits";
@@ -956,7 +956,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     try
     {
       string _awardsURL = string.Format(IMDBAPI_Awards, IMDBID);
-      string _awardsPage = GetPage(_awardsURL);
+      string _awardsPage = GetPages(_awardsURL);
       if (string.IsNullOrEmpty(_awardsPage))
       {
         return string.Empty;
@@ -1795,7 +1795,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     IMDBPageCache = new Hashtable();
   }
 
-  private string GetPage(string strUrl, string strEncode = "utf-8", bool cache = false, int retryCount = 0)
+  private static string GetPage(string strUrl, string strEncode = "utf-8", bool cache = false, int retryCount = 0)
   {
     Log.Debug("{0} GetPage: {1} (Attempt: {2})", strGrabber, HideAPIKey(strUrl), retryCount + 1);
 
@@ -1866,20 +1866,20 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       var response = webEx.Response as HttpWebResponse;
       if (response != null && (int)response.StatusCode == 429 && retryCount < 3)
       {
-          int sleepMs = (retryCount + 1) * 5000;
-          string retryAfter = response.Headers["Retry-After"];
-          int seconds = 0;
-          if (!string.IsNullOrEmpty(retryAfter) && int.TryParse(retryAfter, out seconds))
+        int sleepMs = (retryCount + 1) * 5000;
+        string retryAfter = response.Headers["Retry-After"];
+        int seconds = 0;
+        if (!string.IsNullOrEmpty(retryAfter) && int.TryParse(retryAfter, out seconds))
+        {
+          if (seconds > 0)
           {
-            if (seconds > 0)
-            {
-              sleepMs = seconds * 1000;
-            }
+            sleepMs = seconds * 1000;
           }
-          Log.Debug("{0} GetPage: 429 Too Many Requests. Attempt: {1}. Wait {2}ms...", strGrabber, retryCount + 1, sleepMs);
-          System.Threading.Thread.Sleep(sleepMs);
-          
-          return GetPage(strUrl, strEncode, cache, retryCount + 1);
+        }
+        Log.Debug("{0} GetPage: 429 Too Many Requests. Attempt: {1}. Wait {2}ms...", strGrabber, retryCount + 1, sleepMs);
+        System.Threading.Thread.Sleep(sleepMs);
+ 
+        return GetPage(strUrl, strEncode, cache, retryCount + 1);
       }
       Log.Error("{0} GetPage: WebException: {1} err:{2}", strGrabber, HideAPIKey(strUrl), webEx.Message);
     }
@@ -1905,7 +1905,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     return strBody;
   }
 
-  public string GetPages(string strUrl, string strEncode = "utf-8", bool cache = true)
+  private static string GetPages(string strUrl, string strEncode = "utf-8", bool cache = true)
   {
     JObject mainResult = null;
     string currentPage = strUrl;
@@ -2637,9 +2637,9 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   private static Dictionary<string, string> Groups = new Dictionary<string, string>() // Language - Add to Group|Groups for Our films|Groups for Foreign films
   {
     { "EN", "F|Our films|Foreign films" },
-  { "RU", "T|Наши фильмы|Иностранные фильмы" },
-  { "UA", "T|Наші фільми|Іноземні фільми"},
-  { "DE", "F|Unsere Filme|Ausländische Filme" }
+    { "RU", "T|Наши фильмы|Иностранные фильмы" },
+    { "UA", "T|Наші фільми|Іноземні фільми"},
+    { "DE", "F|Unsere Filme|Ausländische Filme" }
   };
 
   private static bool GRABBER_ADDTOUSERGROUP_Lang()
@@ -2659,15 +2659,15 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   private static string GetGRABBER_GroupSetting(int i)
   {
-  string str = Groups.Where(x => x.Key == API_LANG).Select(x => x.Value).FirstOrDefault();
-  if (string.IsNullOrEmpty(str))
-  {
+    string str = Groups.Where(x => x.Key == API_LANG).Select(x => x.Value).FirstOrDefault();
+    if (string.IsNullOrEmpty(str))
+    {
       str = Groups.Where(x => x.Key == "EN").Select(x => x.Value).FirstOrDefault();
-  }
-  if (string.IsNullOrEmpty(str))
-  {
-    return string.Empty;
-  }
+    }
+    if (string.IsNullOrEmpty(str))
+    {
+      return string.Empty;
+    }
 
     string[] group = str.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
     if (i < group.Length)
@@ -2680,22 +2680,22 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   private static Dictionary<string, string> Technical = new Dictionary<string, string>()
   {
     { "EN", "Technical specifications" },
-  { "RU", "Информация о фильме" },
-  { "UA", "Інформація про фільм"},
-  { "DE", "Technische Spezifikationen" }
+    { "RU", "Информация о фильме" },
+    { "UA", "Інформація про фільм"},
+    { "DE", "Technische Spezifikationen" }
   };
 
   private static string GRABBER_Technical()
   {
-  string str = Technical.Where(x => x.Key == API_LANG).Select(x => x.Value).FirstOrDefault();
-  if (string.IsNullOrEmpty(str))
-  {
+    string str = Technical.Where(x => x.Key == API_LANG).Select(x => x.Value).FirstOrDefault();
+    if (string.IsNullOrEmpty(str))
+    {
       str = Technical.Where(x => x.Key == "EN").Select(x => x.Value).FirstOrDefault();
-  }
-  if (string.IsNullOrEmpty(str))
-  {
-    return string.Empty;
-  }
+    }
+    if (string.IsNullOrEmpty(str))
+    {
+      return string.Empty;
+    }
     return str;
   }  
 
