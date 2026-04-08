@@ -1002,7 +1002,8 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
           var allGroups = Awards.awardNominations
                           .GroupBy(n => n.awardEvent.name)
-                          .OrderBy(g => g.Min(a => a.year));
+                          .OrderBy(g => g.Min(a => a.year))
+                          .ThenBy(g => g.Key);
           foreach (var group in allGroups)
           {
             string awardMainName = group.Key;
