@@ -140,7 +140,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       movieDetails.UserReview = string.Empty;
 
       /* IMDB Test
-      Log.Warn("{0} GetDetails: IMDB Test Turned ON!");
+      Log.Warn("{0} GetDetails: IMDB Test Turned ON!", strGrabber);
       movieDetails.UserReview = string.Empty;
       movieDetails.MPARating = string.Empty;
       movieDetails.Rating = 0.0f;
@@ -890,7 +890,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     }
 
     /* IMDB Test */
-    Log.Warn("{0} GetIMDBDetails: IMDB Test Turned ON!");
+    Log.Warn("{0} GetIMDBDetails: IMDB Test Turned ON!", strGrabber);
     movieDetails.MPARating = string.Empty;
     movieDetails.RunTime = 0;
     movieDetails.Language = string.Empty;
