@@ -882,7 +882,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
             reviewText = reviewText.Replace("\n", string.Empty);
             reviewText = reviewText.Replace("\r", string.Empty);
             reviewText = Regex.Replace(reviewText, @"[ ]{2,}", " ").Trim();
-            _reviewList = _reviewList + reviewRating + " " + reviewText + "\n"
+            _reviewList = _reviewList + reviewRating + " " + reviewText + "\n";
             Log.Debug("{0} TMDB GetUserReview: Review by {1}: {2}", strGrabber, review.author, reviewRating + " " + reviewText);
           }
         }
