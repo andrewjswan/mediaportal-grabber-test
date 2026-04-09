@@ -163,6 +163,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       }
 
       // TMDB Review as Fallback
+      Log.Debug("{0} User review: {1}", strGrabber, movieDetails.UserReview);
       if (string.IsNullOrEmpty(movieDetails.UserReview))
       {
         movieDetails.UserReview = GetUserReviewTMDB(adetails);
