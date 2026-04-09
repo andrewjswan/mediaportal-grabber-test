@@ -863,7 +863,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       if (Reviews.results.Count > 0)
       {
         var sortedReviews = Reviews.results
-                                   .OrderByDescending(r => r.author_details.rating ?? 0)
+                                   .OrderByDescending(r => r.author_details.rating ?? 0.0)
                                    .ToList();
 
         foreach (var review in sortedReviews)
@@ -2351,7 +2351,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     public string name { get; set; }
     public string username { get; set; }
     public string avatar_path { get; set; }
-    public int? rating { get; set; }
+    public float? rating { get; set; }
   }
 
   public class Review
