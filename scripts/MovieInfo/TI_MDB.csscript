@@ -162,6 +162,12 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
         movieDetails.TagLine = adetails.TagLine;
       }
 
+      // TMDB Review as Fallback
+      if (string.IsNullOrEmpty(movieDetails.UserReview))
+      {
+        movieDetails.UserReview = GetUserReviewTMDB(adetails);
+      }
+
       // MePo Stuff
       if (string.IsNullOrEmpty(movieDetails.PlotOutline))
       {
@@ -265,6 +271,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   public const string API_Keywords = API_BaseUrl + "movie/{0}/keywords";
   public const string API_Translations = API_BaseUrl + "movie/{0}/translations";
   public const string API_Collection = API_BaseUrl + "collection/{0}";
+  public const string API_Reviews = API_BaseUrl + "movie/{0}/reviews";
 
   #endregion TMDB Const
 
@@ -826,9 +833,72 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     catch { }
   }
 
-  private static string HideAPIKey(string url)
+  private static string GetUserReviewTMDB(TMDBMovie movie)
   {
-    return url.Replace(API_KEY, "<APIKEY>");
+    return string.Empty;
+
+    string json = string.Empty;
+    try
+    {
+      string _reviewURL = MakeTMDBUrl(API_Reviews, movie.ID.ToString());
+      json = GetPage(_reviewURL);
+      if (string.IsNullOrEmpty(json))
+      {
+        return string.Empty;
+      }
+    }
+    catch (Exception ex)
+    {
+      Log.Error("{0} TMDB Script GetUserReview error: {1}", strGrabber, ex.Message);
+    }
+
+    try
+    {
+      UserReviews Reviews = JsonConvert.DeserializeObject<UserReviews>(json);
+      if (Reviews == null || Reviews.results == null)
+      {
+        Log.Debug("{0} TMDB GetUserReview, JSON changed!?.", strGrabber);
+        return string.Empty;
+      }
+
+      string _reviewList = string.Empty;
+      if (Reviews.results.Count > 0)
+      {
+        var sortedReviews = Reviews.results
+                                   .OrderByDescending(r => r.author_details.rating ?? 0)
+                                   .ToList();
+
+        foreach (var review in sortedReviews)
+        {
+          string reviewRating = string.Empty;
+          if (review.author_details.rating != null && review.author_details.rating > 0)
+          {
+            reviewRating = string.Format("[{0}/10] ", review.author_details.rating);
+          }
+
+          string reviewText = review.content;
+          if (!string.IsNullOrEmpty(reviewText))
+          {
+            reviewText = reviewText.Replace("\n", string.Empty);
+            reviewText = reviewText.Replace("\r", string.Empty);
+            reviewText = Regex.Replace(reviewText, @"[ ]{2,}", " ").Trim();
+            _reviewList = _reviewList + reviewRating + " " + reviewText + "\n"
+            Log.Debug("{0} TMDB GetUserReview: Review by {1}: {2}", strGrabber, review.author, reviewRating + " " + reviewText);
+          }
+        }
+
+        if (!string.IsNullOrEmpty(_reviewList))
+        {
+          // Log.Debug("{0} TMDB GetUserReview: {1}", strGrabber, _reviewList.Replace("\n", " "));
+          return _reviewList;
+        }
+      }
+    }
+    catch (Exception ex)
+    {
+      Log.Debug("{0} TMDB GetUserReview, Exception {1}, JSON changed!?.", strGrabber, ex.Message);
+    }
+    return string.Empty;
   }
 
   private static string GetTMDBMovieDetailsURL(string url)
@@ -1110,6 +1180,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   {
     return string.Empty;
 
+    /*
     try
     {
       string _triviaURL = string.Format(IMDB_Trivia, IMDBID);
@@ -1152,12 +1223,14 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       Log.Error("{0} IMDB Script GetTrivia error: {1}", strGrabber, ex.Message);
     }
     return string.Empty;
+    */
   }
 
   private static string GetUserReviewIMDB(string IMDBID)
   {
     return string.Empty;
 
+    /*
     string json = string.Empty;
     try
     {
@@ -1243,6 +1316,7 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
       Log.Debug("{0} IMDB GetUserReview, Exception {1}, JSON changed!?.", strGrabber, ex.Message);
     }
     return string.Empty;
+    */
   }
 
   private static string GetMPARating(string IMDBID)
@@ -1862,6 +1936,11 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
 
   #region Web
 
+  private static string HideAPIKey(string url)
+  {
+    return url.Replace(API_KEY, "<APIKEY>");
+  }
+
   private static Hashtable IMDBPageCache;
 
   private static void ClearPageCache()
@@ -2266,6 +2345,35 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     public string job { get; set; }
     public string name { get; set; }
     public string profile_path { get; set; }
+  }
+
+  // User Review
+  public class AuthorDetails
+  {
+    public string name { get; set; }
+    public string username { get; set; }
+    public string avatar_path { get; set; }
+    public int? rating { get; set; }
+  }
+
+  public class Review
+  {
+    public string author { get; set; }
+    public AuthorDetails author_details { get; set; }
+    public string content { get; set; }
+    public DateTime created_at { get; set; }
+    public string id { get; set; }
+    public DateTime updated_at { get; set; }
+    public string url { get; set; }
+  }
+
+  public class UserReviews
+  {
+    public int id { get; set; }
+    public int page { get; set; }
+    public List<Review> results { get; set; }
+    public int total_pages { get; set; }
+    public int total_results { get; set; }
   }
 
   #endregion TMDB API Struct
