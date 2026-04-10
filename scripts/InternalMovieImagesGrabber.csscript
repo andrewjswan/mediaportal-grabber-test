@@ -157,7 +157,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
           // same cover more than once so we don't need them
           if (impAwardsImages.Contains(urlImpAw + mImpAw.Value))
           {
-            continue;
+            break;
           }
           impAwardsImages.Add(urlImpAw + mImpAw.Value);
 
@@ -167,7 +167,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
           {
             // Check duplicate entries because Google page links can point to
             // same cover more than once so we don't need them
-            if (impAwardsImages.Contains(urlImpAw + "posters/" + m1.Groups["poster"])
+            if (impAwardsImages.Contains(urlImpAw + "posters/" + m1.Groups["poster"]))
             {
               continue;
             }
