@@ -119,7 +119,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     IMPAwardsSearch x = new IMPAwardsSearch();
 
     string uri;
-    string url = string.Format("https://www.google.com/search?as_q={0}+poster+site:www.impawards.com&tbm=isch", movieName.Replace(" ", "+"));
+    string url = string.Format("https://www.google.com/search?as_q={0}+poster+site:www.impawards.com&udm=2", movieName.Replace(" ", "+"));
     string resultGoogle = GetPage(url, "utf-8", out uri);
     if (string.IsNullOrEmpty(resultGoogle))
     {
