@@ -126,7 +126,6 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
       Log.Debug("GetIMPAwardsImages v{0} IMDB = {1}/{2}, empty page.", strGrabberVersion, imdbMovieID, movieName);
       return impAwardsImages;
     }
-    Log.Debug("GetIMPAwardsImages v{0} IMDB = {1}/{2}, page {3}", strGrabberVersion, imdbMovieID, movieName, resultGoogle);
 
     string resultImpAw = string.Empty;
     MatchCollection mGoogle = Regex.Matches(resultGoogle, @"www.impawards.com\/(?<year>\d{4})\/.+?html");
