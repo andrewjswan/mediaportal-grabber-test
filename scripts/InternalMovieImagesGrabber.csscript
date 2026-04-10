@@ -130,13 +130,13 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     string baseImpAw = "http://www.impawards.com";
     string resultImpAw = string.Empty;
     MatchCollection mIMP = Regex.Matches(page, @"\/(?<year>\d{4})\/[^\/]+?html");
-    foreach (Match mImpAw in mIMP)
+    foreach (Match mImpAwList in mIMP)
     {
       // Check if /year/ is in link, if no that is no cover
-      string year = mImpAw.Groups["year"].Value;
+      string year = mImpAwList.Groups["year"].Value;
       if (!string.IsNullOrEmpty(year))
       {
-        url = baseImpAw + mImpAw.Value;
+        url = baseImpAw + mImpAwList.Value;
         resultImpAw = GetPage(url, "utf-8", out uri);;
 
         // Check if IMDB number on poster page is equal to  IMDB ttnumber, if not-> next link
@@ -147,8 +147,9 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
         }
 
         string urlImpAw = baseImpAw + "/" + year + "/";
+
         // Get main poster displayed on html-page
-        mImpAw = Regex.Match(resultImpAw, "posters/.*?.jpg");
+        Match mImpAw = Regex.Match(resultImpAw, "posters/.*?.jpg");
         if (mImpAw.Success)
         {
           // Check duplicate entries because page links can point to
