@@ -136,8 +136,8 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
       string year = mImpAwList.Groups["year"].Value;
       if (!string.IsNullOrEmpty(year))
       {
-        url = baseImpAw + mImpAwList.Value;
-        resultImpAw = GetPage(url, "utf-8", out uri);;
+        url = baseImpAw + mImpAwList.Value.Trim();
+        resultImpAw = GetPage(url, "utf-8", out uri);
 
         // Check if IMDB number on poster page is equal to  IMDB ttnumber, if not-> next link
         Match ttcheck = Regex.Match(resultImpAw, @"tt\d{7,8}");
