@@ -119,26 +119,25 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
     IMPAwardsSearch x = new IMPAwardsSearch();
 
     string uri;
-    string url = string.Format("https://www.google.com/search?as_q={0}+poster+site:www.impawards.com&udm=2", movieName.Replace(" ", "+"));
-    string resultGoogle = GetPage(url, "utf-8", out uri);
-    if (string.IsNullOrEmpty(resultGoogle))
+    string url = string.Format("http://www.impawards.com/search.php?search_data={0}", movieName.Replace(" ", "+"));
+    string page = GetPage(url, "utf-8", out uri);
+    if (string.IsNullOrEmpty(page))
     {
       Log.Debug("GetIMPAwardsImages v{0} IMDB = {1}/{2}, empty page.", strGrabberVersion, imdbMovieID, movieName);
       return impAwardsImages;
     }
 
+    string baseImpAw = "http://www.impawards.com";
     string resultImpAw = string.Empty;
-    MatchCollection mGoogle = Regex.Matches(resultGoogle, @"www.impawards.com\/(?<year>\d{4})\/.+?html");
-    for (int i = 0; i < mGoogle.Count; i++)
+    MatchCollection mIMP = Regex.Matches(page, @"\/(?<year>\d{4})\/[^\/]+?html");
+    foreach (Match mImpAw in mIMP)
     {
-      Match mImpAw = mGoogle[i];
       // Check if /year/ is in link, if no that is no cover
       string year = mImpAw.Groups["year"].Value;
       if (!string.IsNullOrEmpty(year))
       {
-        string url2 = mImpAw.Value;
-        url2 = "http://" + url2;
-        resultImpAw = GetPage(url2, "utf-8", out uri);;
+        url = baseImpAw + mImpAw.Value;
+        resultImpAw = GetPage(url, "utf-8", out uri);;
 
         // Check if IMDB number on poster page is equal to  IMDB ttnumber, if not-> next link
         Match ttcheck = Regex.Match(resultImpAw, @"tt\d{7,8}");
@@ -147,13 +146,12 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
           continue;
         }
 
-        Match urlImpAw = Regex.Match(url2, @".*?\d{4}.\/*?");
-
+        string urlImpAw = baseImpAw + "/" + year "/";
         // Get main poster displayed on html-page
         mImpAw = Regex.Match(resultImpAw, "posters/.*?.jpg");
         if (mImpAw.Success)
         {
-          // Check duplicate entries because Google page links can point to
+          // Check duplicate entries because page links can point to
           // same cover more than once so we don't need them
           if (impAwardsImages.Contains(urlImpAw + mImpAw.Value))
           {
@@ -165,7 +163,7 @@ internal class MovieImagesGrabber : InternalCSScriptGrabbersLoader.Movies.IInter
           MatchCollection mcImpAw = Regex.Matches(resultImpAw, "thumbs/imp_(?<poster>.*?.jpg)");
           foreach (Match m1 in mcImpAw)
           {
-            // Check duplicate entries because Google page links can point to
+            // Check duplicate entries because page links can point to
             // same cover more than once so we don't need them
             if (impAwardsImages.Contains(urlImpAw + "posters/" + m1.Groups["poster"]))
             {
