@@ -1033,7 +1033,8 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     }
 
     // Get Technical data
-    pageURL = string.Format(IMDB_Tech, movieDetails.IMDBNumber);
+    // pageURL = string.Format(IMDB_Tech, movieDetails.IMDBNumber);
+    pageURL = string.Format(IMDB_Tech, "tt12042730");
     page = GetPage(pageURL);
     string technical = GetTechnicalIMDB(page);
     if (!string.IsNullOrEmpty(technical))
