@@ -2053,10 +2053,6 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
         if (urlToken != null)
         {
             string archivedUrl = urlToken.ToString();
-            if (archivedUrl.Contains("/web/") && !archivedUrl.Contains("if_"))
-            {
-              archivedUrl = archivedUrl.Replace("/http", "if_/http");
-            }
             if (archivedUrl.Contains("http://"))
             {
               archivedUrl = archivedUrl.Replace("http://", "https://");
