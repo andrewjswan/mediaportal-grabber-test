@@ -27,7 +27,7 @@ using Newtonsoft.Json.Linq;
 
 internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
 {
-  const string strGrabberVersion = "20260405.V";
+  const string strGrabberVersion = "20260721.V";
 
   private TMDBMovie tmdbMovie;
   private TMDBMovie imdbMovie;
@@ -1188,7 +1188,8 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     try
     {
       string absoluteUri;
-      string _awardsURL = string.Format("https://web.archive.org/web/2/https://www.imdb.com/name/{0}/awards/", IMDBID);
+      // string _awardsURL = string.Format("https://web.archive.org/web/2/https://www.imdb.com/name/{0}/awards/", IMDBID);
+      string _awardsURL = string.Format("https://archive.org/wayback/available?url=https://www.imdb.com/name/{0}/awards/", IMDBID);
       string _awardsPage = GetPage(_awardsURL, "utf-8", out absoluteUri);
       if (string.IsNullOrEmpty(_awardsPage))
       {
@@ -2467,6 +2468,31 @@ internal class InternalActorsGrabber : IIMDBInternalActorsScriptGrabber
     finally
     {
       req = null;
+    }
+
+    // Wayback archive
+    if (!string.IsNullOrEmpty(strBody) && strUrl.Contains("archive.org/wayback"))
+    {
+      try
+      {
+        var json = Newtonsoft.Json.Linq.JObject.Parse(strBody);
+        var urlToken = json.SelectToken("archived_snapshots.closest.url");
+        if (urlToken != null)
+        {
+            string archivedUrl = urlToken.ToString();
+            if (archivedUrl.Contains("http://"))
+            {
+              archivedUrl = archivedUrl.Replace("http://", "https://");
+            }
+            Log.Debug("InternalActorsScriptGrabber - GetPage: Wayback API successfully returned a snapshot URL. Redirecting to: {0}", archivedUrl);
+            return GetPage(archivedUrl, strEncode, out absoluteUri, cache, retryCount);
+        }
+        Log.Warn("InternalActorsScriptGrabber - GetPage: Wayback API returned a valid response, but no successful (200 OK) snapshots were found.");
+      }
+      catch (Exception ex)
+      {
+        Log.Error("InternalActorsScriptGrabber - GetPage: Failed to parse Wayback API JSON response: {0}", ex.Message);
+      }
     }
 
     if (string.IsNullOrEmpty(strBody))
