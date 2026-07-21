@@ -286,14 +286,18 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
   public const string IMDB_Awards = IMDB_BaseUrl + "awards/";
   public const string IMDB_Parents = IMDB_BaseUrl + "parentalguide/";
   // public const string IMDB_Trivia = IMDB_BaseUrl + "trivia/";
-  public const string IMDB_Trivia = "https://web.archive.org/web/2/" + IMDB_BaseUrl + "trivia/";
+  // public const string IMDB_Trivia = "https://web.archive.org/web/2/" + IMDB_BaseUrl + "trivia/";
+  public const string IMDB_Trivia = "https://archive.org/wayback/available?url=" + IMDB_BaseUrl + "trivia/";
   // public const string IMDB_Review = IMDB_BaseUrl + "reviews/?sort=totalVotes&dir=desc&ratingFilter=0";
-  public const string IMDB_Review = "https://web.archive.org/web/2/" + IMDB_BaseUrl + "reviews/";
+  // public const string IMDB_Review = "https://web.archive.org/web/2/" + IMDB_BaseUrl + "reviews/";
+  public const string IMDB_Review = "https://archive.org/wayback/available?url=" + IMDB_BaseUrl + "reviews/";
   public const string IMDB_Ratings = IMDB_BaseUrl + "ratings/";
   // public const string IMDB_Taglines = IMDB_BaseUrl + "taglines/";
-  public const string IMDB_Taglines = "https://web.archive.org/web/2/" + IMDB_BaseUrl + "taglines/";
+  // public const string IMDB_Taglines = "https://web.archive.org/web/2/" + IMDB_BaseUrl + "taglines/";
+  public const string IMDB_Taglines = "https://archive.org/wayback/available?url=" + IMDB_BaseUrl + "taglines/";
   // public const string IMDB_Tech = IMDB_BaseUrl + "technical/";
-  public const string IMDB_Tech = "https://web.archive.org/web/2/" + IMDB_BaseUrl + "technical/";
+  // public const string IMDB_Tech = "https://web.archive.org/web/2/" + IMDB_BaseUrl + "technical/";
+  public const string IMDB_Tech = "https://archive.org/wayback/available?url=" + IMDB_BaseUrl + "technical/";
 
   #endregion IMDB Const
 
@@ -2037,6 +2041,35 @@ internal class Grabber : MarshalByRefObject, IIMDBScriptGrabber
     finally
     {
       req = null;
+    }
+
+    // Wayback archive
+    if (!string.IsNullOrEmpty(strBody) && strUrl.Contains("archive.org/wayback"))
+    {
+      try
+      {
+        var json = Newtonsoft.Json.Linq.JObject.Parse(strBody);
+        var urlToken = json.SelectToken("archived_snapshots.closest.url");
+        if (urlToken != null)
+        {
+            string archivedUrl = urlToken.ToString();
+            if (archivedUrl.Contains("/web/") && !archivedUrl.Contains("if_"))
+            {
+              archivedUrl = archivedUrl.Replace("/web/", "/web/if_");
+            }
+            if (archivedUrl.Contains("http://"))
+            {
+              archivedUrl = archivedUrl.Replace("http://", "https://");
+            }
+            Log.Debug("{0} GetPage: Wayback API successfully returned a snapshot URL. Redirecting to: {1}", strGrabber, archivedUrl);
+            return GetPage(archivedUrl, strEncode, cache, retryCount + 1);
+        }
+        Log.Warn("{0} GetPage: Wayback API returned a valid response, but no successful (200 OK) snapshots were found.", strGrabber);
+      }
+      catch (Exception ex)
+      {
+        Log.Error("{0} GetPage: Failed to parse Wayback API JSON response: {1}", strGrabber, ex.Message);
+      }
     }
 
     if (string.IsNullOrEmpty(strBody))
